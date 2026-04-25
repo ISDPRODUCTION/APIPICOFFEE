@@ -9,6 +9,7 @@ use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\Api\UnifiedApiController;
 Route::get('/test-product-image', function() {
     $product = \App\Models\Product::first();
     return [
@@ -29,6 +30,7 @@ Route::post('/forgot-password/reset', [PasswordResetController::class, 'resetDir
 
 // ── Authenticated ──────────────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
+    Route::get('/api/unified-data', [UnifiedApiController::class, 'index'])->name('api.unified');
 
     Route::prefix('categories')->name('categories.')->middleware('role:cashier,admin,manager,supervisor')->group(function () {
         Route::get('/api', [\App\Http\Controllers\CategoryController::class, 'getPaginated'])->name('api');
