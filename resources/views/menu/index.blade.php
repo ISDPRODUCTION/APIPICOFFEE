@@ -429,6 +429,7 @@ const categoryModule = {
 
     renderCategories(categories) {
         const container = document.getElementById('category-container');
+        if (!container) return;
         let html = `<a href="/menu?category=all&search=${this.search}" class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${this.currentCategory == 'all' ? 'text-primary border-b-2 border-primary' : 'text-[#78716C] hover:text-[#1C1917]'}">All</a>`;
         categories.forEach(cat => {
             const isActive = this.currentCategory == cat.slug;
@@ -439,6 +440,7 @@ const categoryModule = {
 
     renderPagination(data) {
         const container = document.getElementById('category-pagination');
+        if (!container) return;
         let html = '';
         if (data.prev_page_url) {
             html += `<button onclick="categoryModule.loadCategories(${data.current_page - 1})" class="p-1 rounded bg-stone-100 text-stone-600 hover:bg-stone-200"><svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg></button>`;
@@ -452,6 +454,7 @@ const categoryModule = {
     populateSelects(categories) {
         const addSelect = document.querySelector('select[name="category"]');
         const editSelect = document.getElementById('edit-category');
+        if (!addSelect || !editSelect) return;
         let options = '<option value="">Select category</option>';
         categories.forEach(cat => {
             options += `<option value="${cat.slug}">${cat.name}</option>`;
