@@ -9,8 +9,18 @@
 
         {{-- Category Tabs --}}
         <div class="flex gap-4 md:gap-6 border-b border-stone-200 mb-6 overflow-x-auto scrollbar-hide">
+            {{-- Tab ALL --}}
+            <button type="button"
+                data-category="all"
+                onclick="posModule.switchCategory('all')"
+                class="category-tab pb-3 text-sm font-semibold tracking-wider transition-colors relative whitespace-nowrap flex-shrink-0
+                    {{ $category === 'all' || !$category
+                        ? 'text-[#1C1917] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary'
+                        : 'text-[#78716C] hover:text-[#1C1917]' }}">
+                ALL
+            </button>
             @foreach(['food' => 'FOOD', 'drinks' => 'DRINKS', 'snacks' => 'SNACKS', 'dessert' => 'DESSERT'] as $key => $label)
-            <<button type="button"
+            <button type="button"
                 data-category="{{ $key }}"
                 onclick="posModule.switchCategory('{{ $key }}')"
                 class="category-tab pb-3 text-sm font-semibold tracking-wider transition-colors relative whitespace-nowrap flex-shrink-0

@@ -16,7 +16,7 @@ class PosController extends Controller
 
     public function index(Request $request): View
     {
-        $category = $request->get('category', 'drinks');
+        $category = $request->get('category', 'all');
         $search   = $request->get('search');
 
         $products = $this->productService->getAllForPos($category, $search);
