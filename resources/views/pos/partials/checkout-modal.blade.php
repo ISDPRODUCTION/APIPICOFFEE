@@ -20,7 +20,7 @@
             {{-- Order Summary --}}
             <div>
                 <p class="text-xs font-bold text-primary uppercase tracking-wider mb-3">Order Summary</p>
-                <div id="checkout-items-list" class="space-y-2">
+                <div id="checkout-items-list" class="space-y-2 overflow-y-auto max-h-[35vh] pr-1">
                     {{-- Populated by checkoutModule --}}
                 </div>
             </div>
