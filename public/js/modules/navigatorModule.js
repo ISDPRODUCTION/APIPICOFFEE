@@ -161,19 +161,18 @@ const navigatorModule = (() => {
 
     // ── Re-initialize page-specific scripts ─────────────────────
     function reinitPageScripts(doc, newMain) {
-        // Find all <script> tags pushed via @push('scripts') in the new doc body
+        // Build set of ALL currently loaded script srcs to avoid re-declaring globals
+        const loadedSrcs = new Set(
+            Array.from(document.querySelectorAll('script[src]')).map(s => s.src)
+        );
+
+        // Find all <script> tags in the body of the fetched page
         const scripts = doc.querySelectorAll('body script');
-        const existingIds = Array.from(document.querySelectorAll('script[data-nav-page]')).map(s => s.src);
 
         scripts.forEach(oldScript => {
-            // Skip scripts already loaded globally (stores, modules, main.js)
             if (oldScript.src) {
-                const srcPath = new URL(oldScript.src, window.location.origin).pathname;
-                const globalPaths = ['/js/store/', '/js/main.js', '/js/modules/navigatorModule.js'];
-                if (globalPaths.some(p => srcPath.includes(p))) return;
-
-                // If already injected by a previous nav, skip re-adding
-                if (existingIds.includes(oldScript.src)) return;
+                // Skip any script already present in the DOM (by exact src match)
+                if (loadedSrcs.has(oldScript.src)) return;
             }
 
             const newScript = document.createElement('script');
@@ -181,8 +180,12 @@ const navigatorModule = (() => {
 
             if (oldScript.src) {
                 newScript.src = oldScript.src;
+                // Track so subsequent navs skip it too
+                loadedSrcs.add(oldScript.src);
             } else {
-                newScript.textContent = oldScript.textContent;
+                // Inline script – wrap in self-invoking function to avoid scope pollution
+                // and fire immediately since DOMContentLoaded already ran
+                newScript.textContent = `(function(){\n${oldScript.textContent}\n// Simulate DOMContentLoaded for inline handlers\ndocument.dispatchEvent(new Event('DOMContentLoaded'));\n})();`;
             }
 
             document.body.appendChild(newScript);
