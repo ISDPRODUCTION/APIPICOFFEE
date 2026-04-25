@@ -16,7 +16,7 @@ Route::get('/test-product-image', function() {
         'image_path' => $product->image,
         'image_url' => $product->image_url,
     ];
-});
+})->middleware('cache.headers:public;max_age=3600');
 
 // ── Auth ───────────────────────────────────────────────────────────────────────
 Route::get('/login', [LoginController::class, 'showLogin'])->name('login')->middleware('guest');

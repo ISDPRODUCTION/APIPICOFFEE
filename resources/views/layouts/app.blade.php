@@ -6,7 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Apipi Coffe') }} – @yield('title', 'POS')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.tailwindcss.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -28,6 +33,11 @@
         .nav-active { background: #FFF7ED; color: #F97316; }
         .nav-active svg { stroke: #F97316; }
         [x-cloak] { display: none !important; }
+
+        /* Smooth page transitions for client-side navigation */
+        main {
+            transition: opacity 0.12s ease;
+        }
 
         /* Sidebar transition */
         #sidebar {
@@ -252,6 +262,7 @@
 <script src="{{ asset('js/modules/dragModule.js') }}"></script>
 <script src="{{ asset('js/modules/cartModule.js') }}"></script>
 <script src="{{ asset('js/main.js') }}"></script>
+<script src="{{ asset('js/modules/navigatorModule.js') }}"></script>
 <script>
 function openSidebar() {
     document.getElementById('sidebar').classList.add('open');
