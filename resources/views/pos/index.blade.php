@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // Close button
-    closeBtn.addEventListener('click', function () {
+    closeBtn?.addEventListener('click', function () {
         panel.classList.add('hidden');
         overlay.classList.add('hidden');
         const count = parseInt(document.getElementById('panel-item-count').textContent);

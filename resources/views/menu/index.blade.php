@@ -567,7 +567,7 @@ document.getElementById('add-category-form')?.addEventListener('submit', async f
     else alert('Error: ' + (data.message || 'Gagal menambah kategori'));
 });
 
-document.getElementById('add-menu-form').addEventListener('submit', async function(e) {
+document.getElementById('add-menu-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const token = document.querySelector('meta[name="csrf-token"]').content;
     const res = await fetch('{{ route("menu.store") }}', {
@@ -580,7 +580,7 @@ document.getElementById('add-menu-form').addEventListener('submit', async functi
     else alert('Error: ' + (data.message || 'Gagal menambah menu'));
 });
 
-document.getElementById('edit-menu-form').addEventListener('submit', async function(e) {
+document.getElementById('edit-menu-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const id = document.getElementById('edit-product-id').value;
     const token = document.querySelector('meta[name="csrf-token"]').content;

@@ -451,7 +451,7 @@ const settingsModule = {
 };
 
 // ── Form submits ──────────────────────────────────────────────────────────────
-document.getElementById('business-identity-form').addEventListener('submit', async function(e) {
+document.getElementById('business-identity-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('save-identity-btn');
     btn.textContent = 'Menyimpan...'; btn.disabled = true;
@@ -468,7 +468,7 @@ document.getElementById('business-identity-form').addEventListener('submit', asy
     } else { alert(data.message || 'Gagal menyimpan'); }
 });
 
-document.getElementById('add-employee-form').addEventListener('submit', async function(e) {
+document.getElementById('add-employee-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
@@ -491,7 +491,7 @@ document.getElementById('add-employee-form').addEventListener('submit', async fu
     else alert(json.message || 'Gagal menambah karyawan');
 });
 
-document.getElementById('edit-employee-form').addEventListener('submit', async function(e) {
+document.getElementById('edit-employee-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const id = document.getElementById('edit-employee-id').value;
     const data = Object.fromEntries(new FormData(this));

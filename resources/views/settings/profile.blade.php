@@ -198,7 +198,7 @@ function togglePasswordForm() {
 }
 
 // Submit profile
-document.getElementById('profile-form').addEventListener('submit', async function(e) {
+document.getElementById('profile-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = this.querySelector('button[type="submit"]');
     btn.textContent = 'Menyimpan...';
