@@ -20,8 +20,7 @@ class PosController extends Controller
         $search   = $request->get('search');
 
         $products = $this->productService->getAllForPos($category, $search);
-        $stats    = $this->orderService->getDashboardStats();
 
-        return view('pos.index', compact('products', 'category', 'search', 'stats'));
+        return view('pos.index', compact('products', 'category', 'search'));
     }
 }

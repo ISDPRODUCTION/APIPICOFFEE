@@ -410,21 +410,27 @@
 
 @push('scripts')
 <script>
-const categoryModule = {
+window.categoryModule = {
     currentPage: 1,
     currentCategory: '{{ $category ?? "all" }}',
     search: '{{ $search ?? "" }}',
 
     async loadCategories(page = 1) {
-        const res = await fetch(`/categories/api?page=${page}`);
-        const data = await res.json();
-        this.currentPage = data.current_page;
-        this.renderCategories(data.data);
-        this.renderPagination(data);
-
-        const allRes = await fetch(`/categories/api?per_page=999`);
-        const allData = await allRes.json();
-        this.populateSelects(allData.data);
+        try {
+            const [res, allRes] = await Promise.all([
+                fetch(`/categories/api?page=${page}`),
+                fetch(`/categories/api?per_page=999`)
+            ]);
+            const data = await res.json();
+            const allData = await allRes.json();
+            
+            this.currentPage = data.current_page;
+            this.renderCategories(data.data);
+            this.renderPagination(data);
+            this.populateSelects(allData.data);
+        } catch (e) {
+            console.error("Failed to load categories", e);
+        }
     },
 
     renderCategories(categories) {
@@ -474,7 +480,7 @@ const categoryModule = {
     }
 };
 
-const menuModule = {
+window.menuModule = {
     openAddModal() { document.getElementById('add-menu-modal').classList.remove('hidden'); },
     closeAddModal() {
         document.getElementById('add-menu-modal').classList.add('hidden');
@@ -515,7 +521,7 @@ const menuModule = {
             headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }
         });
         const data = await res.json();
-        if (data.success) window.location.reload();
+        if (data.success) navigatorModule.navigate(window.location.href);
     }
 };
 
@@ -579,7 +585,7 @@ document.getElementById('add-menu-form')?.addEventListener('submit', async funct
         body: new FormData(this)
     });
     const data = await res.json();
-    if (data.success) window.location.reload();
+    if (data.success) navigatorModule.navigate(window.location.href);
     else alert('Error: ' + (data.message || 'Gagal menambah menu'));
 });
 
@@ -595,7 +601,7 @@ document.getElementById('edit-menu-form')?.addEventListener('submit', async func
         body: formData
     });
     const data = await res.json();
-    if (data.success) window.location.reload();
+    if (data.success) navigatorModule.navigate(window.location.href);
     else alert('Error: ' + (data.message || 'Gagal update menu'));
 });
 </script>
