@@ -272,7 +272,7 @@ const navigatorModule = (() => {
         document.addEventListener('mouseover', (e) => {
             const link = e.target.closest('a');
             if (!shouldIntercept(link)) return;
-            prefetchTimeout = setTimeout(() => prefetch(link.href), 100);
+            prefetchTimeout = setTimeout(() => prefetch(link.href), 350);
         });
         document.addEventListener('mouseout', () => {
             clearTimeout(prefetchTimeout);

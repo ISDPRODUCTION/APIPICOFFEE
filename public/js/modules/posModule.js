@@ -88,9 +88,6 @@ const posModule = (() => {
 
             _applyResult(grid, gridHTML, countText);
             window.history.replaceState({}, '', url.toString());
-
-            // Prefetch kategori lainnya di latar belakang
-            _prefetchOthers(params.category || _currentCategory);
         })
         .catch(err => {
             if (err.name !== 'AbortError') console.error('Load products error:', err);
@@ -137,11 +134,8 @@ const posModule = (() => {
 
     // Inisialisasi: prefetch semua kategori saat idle
     function init() {
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(() => _prefetchOthers(_currentCategory));
-        } else {
-            setTimeout(() => _prefetchOthers(_currentCategory), 800);
-        }
+        // Dinonaktifkan: prefetch otomatis ternyata memberatkan jaringan
+        // dan membuat navigasi ke halaman lain terasa lemot.
     }
 
     return { switchCategory, loadProducts, init };
