@@ -15,12 +15,13 @@ class SettingsController extends Controller
     public function index(): View
     {
         $employees = User::all();
-        $logoUrl = null;
-        try {
-            if (Storage::disk('s3')->exists('settings/logo.png')) {
-                $logoUrl = Storage::disk('s3')->url('settings/logo.png');
+        $logoUrl = \Illuminate\Support\Facades\Cache::remember('app_logo_url', 86400, function() {
+            try {
+                return Storage::disk('s3')->exists('settings/logo.png') ? Storage::disk('s3')->url('settings/logo.png') : null;
+            } catch (\Exception $e) {
+                return null;
             }
-        } catch (\Exception $e) {}
+        });
         
         $settings = [
             'business_name' => config('app.name', 'Apipi Coffee'),
@@ -98,6 +99,7 @@ class SettingsController extends Controller
                 Storage::disk('s3')->delete('settings/logo.png');
             }
             $request->file('logo')->storeAs('settings', 'logo.png', 's3');
+            \Illuminate\Support\Facades\Cache::forget('app_logo_url');
         }
 
         return response()->json(['success' => true]);
