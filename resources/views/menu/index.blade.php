@@ -55,9 +55,10 @@
         {{-- Mobile card view --}}
         <div class="block md:hidden divide-y divide-stone-100">
             @forelse($products as $product)
-            <div class="p-4 hover:bg-stone-50 transition-colors">
+            <div class="p-4 hover:bg-stone-50 transition-colors" data-product-id="{{ $product->id }}">
                 <div class="flex items-center gap-3">
                     <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
+                        data-product-img="{{ $product->id }}"
                         class="w-14 h-14 rounded-xl object-cover bg-stone-100 flex-shrink-0">
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-[#1C1917] truncate">{{ $product->name }}</p>
@@ -110,9 +111,10 @@
                 </thead>
                 <tbody class="divide-y divide-stone-100">
                     @forelse($products as $product)
-                    <tr class="hover:bg-stone-50 transition-colors">
+                    <tr class="hover:bg-stone-50 transition-colors" data-product-id="{{ $product->id }}">
                         <td class="py-4 px-6">
                             <img src="{{ $product->image_url }}" alt="{{ $product->name }}"
+                                data-product-img="{{ $product->id }}"
                                 class="w-12 h-12 rounded-xl object-cover bg-stone-100">
                         </td>
                         <td class="py-4 px-4">
@@ -717,8 +719,20 @@ document.getElementById('edit-menu-form')?.addEventListener('submit', async func
     const data = await res.json();
     if (data.success) {
         menuModule.closeEditModal();
+
+        // Immediately update ALL product images in the page for this product
+        // Fixes browser caching the old image URL
+        if (menuModule._compressedEditImage) {
+            const freshUrl = URL.createObjectURL(menuModule._compressedEditImage);
+            document.querySelectorAll(`img[data-product-img="${id}"]`).forEach(img => {
+                img.src = freshUrl;
+            });
+        }
+
         navigatorModule.clearCache();
-        navigatorModule.navigate(window.location.href);
+        // Add cache-buster so browser fetches fresh HTML (not cached)
+        const bustUrl = window.location.pathname + '?_t=' + Date.now();
+        navigatorModule.navigate(bustUrl);
     } else {
         // Handle Laravel 422 validation errors
         if (data.errors) {
