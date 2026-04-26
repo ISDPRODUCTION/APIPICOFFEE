@@ -104,17 +104,22 @@ class OrderRepository
             ->toArray();
     }
 
-    public function getWeeklyReportData(): array
+    public function getWeeklyReportData(int $year): array
     {
-        $start = Carbon::now()->subDays(6)->startOfDay();
-        $end   = Carbon::now()->endOfDay();
-
+        // Group by ISO calendar week (week starts Monday)
+        // Returns one row per week with the week's start date, end date, total transactions and revenue
         return $this->model
-            ->selectRaw('DATE(order_date) as date, COUNT(*) as transaction_count, SUM(total) as revenue')
-            ->whereBetween('order_date', [$start, $end])
+            ->selectRaw('
+                YEARWEEK(order_date, 1)                   AS week_key,
+                DATE(MIN(order_date))                     AS week_start,
+                DATE(MAX(order_date))                     AS week_end,
+                COUNT(*)                                  AS transaction_count,
+                SUM(total)                                AS revenue
+            ')
+            ->whereYear('order_date', $year)
             ->where('status', 'completed')
-            ->groupBy('date')
-            ->orderBy('date')
+            ->groupByRaw('YEARWEEK(order_date, 1)')
+            ->orderByRaw('YEARWEEK(order_date, 1)')
             ->get()
             ->toArray();
     }

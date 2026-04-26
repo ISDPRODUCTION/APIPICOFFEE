@@ -31,9 +31,16 @@ const reportModule = (() => {
                             const idx = items[0].dataIndex;
                             const d   = rawData[idx];
                             if (!d) return '';
+                            // Weekly: show range
+                            if (d.week_start !== undefined) {
+                                const fmt = dt => new Date(dt + 'T00:00:00')
+                                    .toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                                return `${fmt(d.week_start)} – ${fmt(d.week_end)}`;
+                            }
+                            // Daily
                             if (d.date) {
-                                const dt = new Date(d.date + 'T00:00:00');
-                                return dt.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+                                return new Date(d.date + 'T00:00:00')
+                                    .toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
                             }
                             return d.label ?? d.month ?? d.year ?? '';
                         },
@@ -85,16 +92,25 @@ const reportModule = (() => {
         };
     }
 
-    // ── Format labels depending on type ───────────────────────────────────────
+    // ── Format labels depending on data type ──────────────────────────────────
     function _formatLabels(rawData) {
         return rawData.map(d => {
+            // Weekly aggregated data: has week_start + week_end
+            if (d.week_start !== undefined) {
+                const start = new Date(d.week_start + 'T00:00:00');
+                const end   = new Date(d.week_end   + 'T00:00:00');
+                const fmtDay = dt => dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
+                return `${fmtDay(start)} – ${fmtDay(end)}`;
+            }
+            // Daily data: has 'date'
             if (d.date) {
                 const dt = new Date(d.date + 'T00:00:00');
                 return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
             }
+            // Monthly data: has 'month' number
             if (d.month !== undefined) {
-                // Monthly report: d.month = 1..12
-                return new Date(2000, d.month - 1, 1).toLocaleDateString('id-ID', { month: 'short' }).toUpperCase();
+                return new Date(2000, d.month - 1, 1)
+                    .toLocaleDateString('id-ID', { month: 'short' }).toUpperCase();
             }
             return String(d.year ?? d.label ?? '');
         });
