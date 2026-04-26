@@ -1,6 +1,7 @@
 /**
  * reportModule.js
  * Manages Sales Report page: Chart.js initialisation, filter switching, export.
+ * Fixed: Canvas reuse, daily/weekly toggle, SPA navigation support.
  */
 
 const reportModule = (() => {
@@ -13,14 +14,22 @@ const reportModule = (() => {
         const canvas = document.getElementById('revenue-chart');
         if (!canvas || typeof Chart === 'undefined') return;
 
+        // Always destroy existing instance before creating new one
         if (chartInstance) {
             chartInstance.destroy();
+            chartInstance = null;
+        }
+
+        // Also destroy any orphaned Chart.js instance attached to the canvas
+        const existingChart = Chart.getChart(canvas);
+        if (existingChart) {
+            existingChart.destroy();
         }
 
         const rawData = window.reportChartData || [];
 
         const labels  = rawData.map(d => {
-            const date = new Date(d.date);
+            const date = new Date(d.date + 'T00:00:00');
             return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
         });
         const revenue = rawData.map(d => d.revenue);
@@ -32,7 +41,7 @@ const reportModule = (() => {
                 datasets: [{
                     label:           'Revenue',
                     data:            revenue,
-                    backgroundColor: rawData.map((_, i) =>
+                    backgroundColor: revenue.map((_, i) =>
                         i === revenue.indexOf(Math.max(...revenue))
                             ? '#F97316'
                             : '#E2E8F0'
@@ -45,6 +54,9 @@ const reportModule = (() => {
             options: {
                 responsive:          true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 400,
+                },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
@@ -57,11 +69,12 @@ const reportModule = (() => {
                             title: (items) => {
                                 const idx = items[0].dataIndex;
                                 const d   = rawData[idx];
-                                return d.date;
+                                return d ? d.date : '';
                             },
                             label: (item) => {
                                 const idx = item.dataIndex;
                                 const d   = rawData[idx];
+                                if (!d) return '';
                                 return [
                                     `Total Transaksi   ${d.transaction_count}`,
                                     `Penghasilan   Rp ${new Intl.NumberFormat('id-ID').format(d.revenue)}`,
@@ -88,33 +101,52 @@ const reportModule = (() => {
     }
 
     function updateChart(data) {
-        if (!chartInstance) return;
+        if (!chartInstance) {
+            initChart();
+            return;
+        }
 
-        const labels  = data.map(d => d.date ?? d.month ?? d.year);
+        const labels  = data.map(d => {
+            // Handle both daily (has 'date') and weekly (has 'month'/'year')
+            if (d.date) {
+                const dt = new Date(d.date + 'T00:00:00');
+                return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
+            }
+            return d.month ?? d.year ?? '';
+        });
         const revenue = data.map(d => d.revenue);
+        const maxRev  = revenue.length > 0 ? Math.max(...revenue) : 0;
 
         chartInstance.data.labels              = labels;
         chartInstance.data.datasets[0].data    = revenue;
-        chartInstance.data.datasets[0].backgroundColor = revenue.map((_, i) =>
-            i === revenue.indexOf(Math.max(...revenue)) ? '#F97316' : '#E2E8F0'
+        chartInstance.data.datasets[0].backgroundColor = revenue.map((v, i) =>
+            v === maxRev && v > 0 ? '#F97316' : '#E2E8F0'
         );
-        chartInstance.update();
+        chartInstance.update('active');
     }
 
     // ── Filter switch ─────────────────────────────────────────────────────────
     async function handleFilterChange(type) {
         currentType = type;
 
-        // Toggle button styles
+        // Toggle button styles using data-active attribute
         ['daily', 'weekly'].forEach(t => {
             const btn = document.getElementById(`btn-${t}`);
             if (!btn) return;
             if (t === type) {
-                btn.className = btn.className.replace('bg-stone-100 text-[#78716C]', 'bg-[#1C1917] text-white');
+                btn.classList.add('bg-[#1C1917]', 'text-white');
+                btn.classList.remove('bg-stone-100', 'text-[#78716C]', 'hover:bg-stone-200');
             } else {
-                btn.className = btn.className.replace('bg-[#1C1917] text-white', 'bg-stone-100 text-[#78716C]');
+                btn.classList.remove('bg-[#1C1917]', 'text-white');
+                btn.classList.add('bg-stone-100', 'text-[#78716C]', 'hover:bg-stone-200');
             }
         });
+
+        // Update period label
+        const periodEl = document.getElementById('chart-period');
+        if (periodEl) {
+            periodEl.textContent = type === 'weekly' ? 'Data Mingguan' : `Periode bulan ini`;
+        }
 
         try {
             const month = window.reportMonth;
@@ -136,10 +168,8 @@ const reportModule = (() => {
         window.open(url, '_blank');
     }
 
-    function openFilter() {
-        // Future: open a filter modal
-        console.log('Filter modal – TODO');
-    }
+    function openFilter()  { /* overridden by inline script */ }
+    function closeFilter() { /* overridden by inline script */ }
 
     // ── Init ───────────────────────────────────────────────────────────────────
     function init() {
@@ -148,10 +178,18 @@ const reportModule = (() => {
         }
     }
 
-    return { initChart, updateChart, handleFilterChange, triggerExport, openFilter, init };
+    return { initChart, updateChart, handleFilterChange, triggerExport, openFilter, closeFilter, init };
 })();
 
 window.reportModule = reportModule;
 
-// Auto-init when DOM is ready
-document.addEventListener('DOMContentLoaded', () => reportModule.init());
+// Auto-init: works both on fresh page load AND SPA navigation
+// On fresh load, DOMContentLoaded fires and init() runs.
+// On SPA nav, the inline script in the page has already set window.reportChartData
+// before this file executes, so we can call init() directly.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => reportModule.init());
+} else {
+    // DOM is already ready (SPA navigation scenario)
+    reportModule.init();
+}

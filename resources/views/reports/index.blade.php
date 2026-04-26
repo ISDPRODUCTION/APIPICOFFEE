@@ -228,10 +228,14 @@
 @endsection
 
 @push('scripts')
+<script src="{{ asset('js/modules/reportModule.js') }}"></script>
 <script>
 window.reportChartData = @json($report['data']);
 window.reportMonth = {{ $month }};
 window.reportYear = {{ $year }};
+
+// Re-init chart now that reportChartData is set
+if (window.reportModule) { reportModule.initChart(); }
 
 document.addEventListener('DOMContentLoaded', function() {
     window._filterExt = {
@@ -289,7 +293,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await res.json();
 
             if (data.success) {
-                document.getElementById('stat-revenue').textContent = 'Rp ' + data.stats.revenue.toLocaleString('id-ID');
+                // Format revenue properly (backend returns integer, format as Rp X.XXX)
+                const revenueFormatted = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.stats.revenue);
+                document.getElementById('stat-revenue').textContent = revenueFormatted;
                 document.getElementById('stat-count').textContent = data.stats.count + ' Transaksi';
                 document.getElementById('stat-label-revenue').textContent = `Total Penjualan (${range.label})`;
 
@@ -351,14 +357,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setTimeout(() => {
         if (window.reportModule) {
-            reportModule.openFilter = () => window._filterExt.openFilter();
+            reportModule.openFilter  = () => window._filterExt.openFilter();
             reportModule.closeFilter = () => window._filterExt.closeFilter();
             reportModule.selectPreset = (btn) => window._filterExt.selectPreset(btn);
             reportModule.applyFilter = () => window._filterExt.applyFilter();
             reportModule.clearFilter = () => window._filterExt.clearFilter();
         }
-    }, 100);
+    }, 50);
 });
 </script>
-<script src="{{ asset('js/modules/reportModule.js') }}"></script>
 @endpush

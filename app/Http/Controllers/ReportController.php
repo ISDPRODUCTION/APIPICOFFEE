@@ -61,14 +61,14 @@ class ReportController extends Controller
             ->orderByDesc('order_date')
             ->get();
 
-        $revenue = $orders->sum('total_amount');
+        $revenue = $orders->sum('total');
         $count   = $orders->count();
 
         $ordersData = $orders->map(fn($o) => [
             'order_number' => $o->order_number,
             'time'         => Carbon::parse($o->order_date)->format('H:i'),
             'items'        => $o->items->map(fn($i) => $i->quantity . 'x ' . $i->product_name)->join(', '),
-            'total'        => 'Rp ' . number_format($o->total_amount, 0, ',', '.'),
+            'total'        => 'Rp ' . number_format($o->total ?? 0, 0, ',', '.'),
             'status'       => $o->status,
         ]);
 
