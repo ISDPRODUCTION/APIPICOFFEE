@@ -25,6 +25,18 @@ class ReportService
         ];
     }
 
+    public function getWeeklyReport(): array
+    {
+        $data = $this->orderRepository->getWeeklyReportData();
+
+        return [
+            'period'  => '7 Hari Terakhir',
+            'data'    => $data,
+            'total'   => array_sum(array_column($data, 'revenue')),
+            'count'   => array_sum(array_column($data, 'transaction_count')),
+        ];
+    }
+
     public function getMonthlyReport(int $year): array
     {
         $data = $this->orderRepository->getMonthlyReportData($year);

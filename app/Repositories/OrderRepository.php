@@ -104,6 +104,21 @@ class OrderRepository
             ->toArray();
     }
 
+    public function getWeeklyReportData(): array
+    {
+        $start = Carbon::now()->subDays(6)->startOfDay();
+        $end   = Carbon::now()->endOfDay();
+
+        return $this->model
+            ->selectRaw('DATE(order_date) as date, COUNT(*) as transaction_count, SUM(total) as revenue')
+            ->whereBetween('order_date', [$start, $end])
+            ->where('status', 'completed')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->toArray();
+    }
+
     public function getYearlyReportData(): array
     {
         return $this->model

@@ -37,6 +37,7 @@ class ReportController extends Controller
         $type  = $request->get('type', 'daily');
 
         $data = match($type) {
+            'weekly'  => $this->reportService->getWeeklyReport(),
             'monthly' => $this->reportService->getMonthlyReport($year),
             'yearly'  => $this->reportService->getYearlyReport(),
             default   => $this->reportService->getDailyReport($month, $year),
