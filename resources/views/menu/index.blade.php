@@ -243,20 +243,20 @@
                 @csrf
                 <div>
                     <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Product Name</label>
-                    <input type="text" name="name" placeholder="Isi nama menu"
+                    <input type="text" name="name" placeholder="Isi nama menu" required
                             class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Category</label>
-                        <select name="category" class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none appearance-none bg-white">
+                        <select name="category" required class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none appearance-none bg-white">
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Price</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-primary">Rp</span>
-                            <input type="number" name="price" placeholder="25.000"
+                            <input type="number" name="price" placeholder="25000" required min="0"
                                     class="w-full pl-10 pr-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
                         </div>
                     </div>
@@ -264,12 +264,14 @@
                 <div>
                     <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Initial Stock</label>
                     <div class="flex items-center gap-2">
-                        <button type="button" onclick="document.getElementById('add-stock').value=Math.max(0,+document.getElementById('add-stock').value-1)"
-                                class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 text-[#78716C] hover:border-primary hover:text-primary text-lg font-light transition-colors">−</button>
                         <input type="number" id="add-stock" name="stock" value="0" min="0"
-                                class="flex-1 text-center px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
-                        <button type="button" onclick="document.getElementById('add-stock').value=+document.getElementById('add-stock').value+1"
-                                class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 text-[#78716C] hover:border-primary hover:text-primary text-lg font-light transition-colors">+</button>
+                                class="flex-1 px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none bg-[#F8F9FA]">
+                        <div class="flex items-center gap-1 flex-shrink-0">
+                            <button type="button" onclick="document.getElementById('add-stock').value=Math.max(0,+document.getElementById('add-stock').value-1)"
+                                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-[#78716C] hover:border-primary hover:text-primary text-xl font-light transition-colors shadow-sm">−</button>
+                            <button type="button" onclick="document.getElementById('add-stock').value=+document.getElementById('add-stock').value+1"
+                                    class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 bg-white text-[#78716C] hover:border-primary hover:text-primary text-xl font-light transition-colors shadow-sm">+</button>
+                        </div>
                     </div>
                 </div>
                 <div>
@@ -674,8 +676,18 @@ document.getElementById('add-menu-form')?.addEventListener('submit', async funct
         body: formData
     });
     const data = await res.json();
-    if (data.success) { menuModule.closeAddModal(); navigatorModule.navigate(window.location.href); }
-    else alert('Error: ' + (data.message || 'Gagal menambah menu'));
+    if (data.success) {
+        menuModule.closeAddModal();
+        navigatorModule.navigate(window.location.href);
+    } else {
+        // Handle Laravel 422 validation errors (returns {errors: {field: [msg]}}) or plain {message: "..."}
+        if (data.errors) {
+            const msgs = Object.values(data.errors).flat().join('\n');
+            alert(msgs);
+        } else {
+            alert(data.message || 'Gagal menambah menu');
+        }
+    }
 });
 
 document.getElementById('edit-menu-form')?.addEventListener('submit', async function(e) {
@@ -696,8 +708,18 @@ document.getElementById('edit-menu-form')?.addEventListener('submit', async func
         body: formData
     });
     const data = await res.json();
-    if (data.success) { menuModule.closeEditModal(); navigatorModule.navigate(window.location.href); }
-    else alert('Error: ' + (data.message || 'Gagal update menu'));
+    if (data.success) {
+        menuModule.closeEditModal();
+        navigatorModule.navigate(window.location.href);
+    } else {
+        // Handle Laravel 422 validation errors
+        if (data.errors) {
+            const msgs = Object.values(data.errors).flat().join('\n');
+            alert(msgs);
+        } else {
+            alert(data.message || 'Gagal update menu');
+        }
+    }
 });
 </script>
 @endpush
