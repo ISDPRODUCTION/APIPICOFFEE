@@ -101,6 +101,11 @@ const checkoutModule = (() => {
 
                 // Reset cart
                 cartStore.reset();
+
+                // Clear SPA cache so reports update without full page reload
+                if (typeof navigatorModule !== 'undefined') {
+                    navigatorModule.clearCache();
+                }
             }
         } catch (err) {
             alert('Order failed: ' + err.message);

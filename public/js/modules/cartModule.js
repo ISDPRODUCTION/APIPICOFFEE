@@ -176,7 +176,7 @@ const cartModule = (() => {
         // Drag (desktop only)
         if (panel && handle && window.innerWidth >= 768) {
             dragModule.enableDrag(panel, handle);
-            dragModule.loadPosition(panel);
+            // dragModule.loadPosition(panel); // Force default CSS position (bottom-left)
         }
 
         // Close button

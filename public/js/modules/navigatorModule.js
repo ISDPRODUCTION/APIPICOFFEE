@@ -76,6 +76,10 @@ const navigatorModule = (() => {
     // ── Cache for prefetched pages ───────────────────────────────
     const cache = new Map();
 
+    function clearCache() {
+        cache.clear();
+    }
+
     // ── Core Navigation ─────────────────────────────────────────
     async function navigate(url, pushState = true) {
         startProgress();
@@ -290,7 +294,7 @@ const navigatorModule = (() => {
         createProgressBar();
     }
 
-    return { init, navigate, prefetch };
+    return { init, navigate, prefetch, clearCache };
 })();
 
 window.navigatorModule = navigatorModule;
