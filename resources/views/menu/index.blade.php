@@ -605,7 +605,10 @@ window.menuModule = {
             headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }
         });
         const data = await res.json();
-        if (data.success) navigatorModule.navigate(window.location.href);
+        if (data.success) {
+            navigatorModule.clearCache();
+            navigatorModule.navigate(window.location.href);
+        }
     }
 };
 
@@ -656,7 +659,11 @@ document.getElementById('add-category-form')?.addEventListener('submit', async f
         body: new FormData(this)
     });
     const data = await res.json();
-    if (data.success) { categoryModule.closeAddModal(); categoryModule.loadCategories(categoryModule.currentPage); }
+    if (data.success) {
+        categoryModule.closeAddModal();
+        navigatorModule.clearCache();
+        categoryModule.loadCategories(categoryModule.currentPage);
+    }
     else alert('Error: ' + (data.message || 'Gagal menambah kategori'));
 });
 
@@ -678,9 +685,9 @@ document.getElementById('add-menu-form')?.addEventListener('submit', async funct
     const data = await res.json();
     if (data.success) {
         menuModule.closeAddModal();
+        navigatorModule.clearCache();
         navigatorModule.navigate(window.location.href);
     } else {
-        // Handle Laravel 422 validation errors (returns {errors: {field: [msg]}}) or plain {message: "..."}
         if (data.errors) {
             const msgs = Object.values(data.errors).flat().join('\n');
             alert(msgs);
@@ -710,6 +717,7 @@ document.getElementById('edit-menu-form')?.addEventListener('submit', async func
     const data = await res.json();
     if (data.success) {
         menuModule.closeEditModal();
+        navigatorModule.clearCache();
         navigatorModule.navigate(window.location.href);
     } else {
         // Handle Laravel 422 validation errors
