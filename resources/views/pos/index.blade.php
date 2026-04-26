@@ -90,7 +90,7 @@
 {{-- Desktop: floating draggable | Mobile: bottom sheet --}}
 <div id="order-panel"
     class="hidden fixed bg-white shadow-xl z-30 overflow-hidden select-none flex flex-col
-            md:rounded-2xl md:w-80 md:bottom-6 md:right-6
+            md:rounded-2xl md:w-80 md:bottom-6 md:left-6 md:right-auto
             bottom-0 left-0 right-0 rounded-t-3xl">
 
     {{-- Drag handle (mobile) --}}
@@ -113,7 +113,7 @@
     </div>
 
     {{-- Items --}}
-    <div id="order-items-list" class="px-4 py-2 space-y-3 overflow-y-auto max-h-[50vh] md:max-h-[60vh]"></div>
+    <div id="order-items-list" class="px-4 py-2 space-y-3 overflow-y-auto max-h-[50vh] md:max-h-[220px]"></div>
 
     {{-- Footer --}}
     <div class="px-4 pt-3 pb-6 md:pb-4 border-t border-stone-100 mt-2 flex-shrink-0">

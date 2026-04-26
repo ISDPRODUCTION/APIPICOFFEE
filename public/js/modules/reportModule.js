@@ -13,6 +13,10 @@ const reportModule = (() => {
         const canvas = document.getElementById('revenue-chart');
         if (!canvas || typeof Chart === 'undefined') return;
 
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
         const rawData = window.reportChartData || [];
 
         const labels  = rawData.map(d => {

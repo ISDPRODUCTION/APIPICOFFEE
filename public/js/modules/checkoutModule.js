@@ -82,6 +82,9 @@ const checkoutModule = (() => {
         }
 
         try {
+            // Simulated payment delay of 2 seconds
+            await new Promise(r => setTimeout(r, 2000));
+
             const payload = {
                 items:          state.items,
                 payment_method: selectedPayment,

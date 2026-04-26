@@ -110,13 +110,13 @@
         </div>
 
         <div class="space-y-3">
-            <a id="new-order-btn" href="{{ route('pos.index') }}"
+            <button id="new-order-btn" onclick="document.getElementById('success-modal').classList.add('hidden')"
                class="flex w-full items-center justify-center gap-2 py-3.5 bg-primary hover:bg-[#EA580C] text-white rounded-2xl text-sm font-semibold transition-colors shadow-lg shadow-orange-200">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5h15M17 21a1 1 0 100-2 1 1 0 000 2zM7 21a1 1 0 100-2 1 1 0 000 2z"/>
                 </svg>
                 New Order
-            </a>
+            </button>
             <a id="print-receipt-btn" href="#"
                class="flex w-full items-center justify-center gap-2 py-3.5 border-2 border-primary text-primary rounded-2xl text-sm font-semibold hover:bg-orange-50 transition-colors">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
