@@ -264,12 +264,12 @@
                 <div>
                     <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Initial Stock</label>
                     <div class="flex items-center gap-2">
-                        <input type="number" name="stock" value="0" min="0"
-                                class="flex-1 px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
-                        <button type="button" onclick="this.previousElementSibling.value=Math.max(0,+this.previousElementSibling.value-1)"
-                                class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 text-[#78716C] hover:border-stone-300 text-lg font-light">−</button>
-                        <button type="button" onclick="this.previousElementSibling.previousElementSibling.previousElementSibling.value=+this.previousElementSibling.previousElementSibling.previousElementSibling.value+1"
-                                class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 text-[#78716C] hover:border-stone-300 text-lg font-light">+</button>
+                        <button type="button" onclick="document.getElementById('add-stock').value=Math.max(0,+document.getElementById('add-stock').value-1)"
+                                class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 text-[#78716C] hover:border-primary hover:text-primary text-lg font-light transition-colors">−</button>
+                        <input type="number" id="add-stock" name="stock" value="0" min="0"
+                                class="flex-1 text-center px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
+                        <button type="button" onclick="document.getElementById('add-stock').value=+document.getElementById('add-stock').value+1"
+                                class="w-10 h-10 flex items-center justify-center rounded-xl border border-stone-200 text-[#78716C] hover:border-primary hover:text-primary text-lg font-light transition-colors">+</button>
                     </div>
                 </div>
                 <div>
@@ -282,9 +282,9 @@
                                 </svg>
                             </div>
                             <p class="text-sm font-medium text-[#1C1917]">Click to upload or drag and drop</p>
-                            <p class="text-xs text-[#78716C]">JPG, PNG up to 5MB</p>
+                            <p class="text-xs text-[#78716C]">JPG, PNG – otomatis dikompres ke ≤100KB</p>
                         </div>
-                        <input type="file" name="image" accept="image/*" class="hidden" onchange="menuModule.previewImage(this)">
+                        <input type="file" id="add-image-input" name="image" accept="image/*" class="hidden" onchange="menuModule.previewImage(this)">
                     </label>
                 </div>
                 <div class="flex gap-3 pt-2">
@@ -481,12 +481,97 @@ window.categoryModule = {
 };
 
 window.menuModule = {
-    openAddModal() { document.getElementById('add-menu-modal').classList.remove('hidden'); },
+    // Holds compressed File objects to inject into FormData on submit
+    _compressedAddImage: null,
+    _compressedEditImage: null,
+
+    // ── Image Compression ───────────────────────────────────────────────────
+    /**
+     * Compress an image File to ≤ targetKB using Canvas.
+     * Returns a Promise<File>.
+     */
+    async compressImage(file, targetKB = 100) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let { width, height } = img;
+
+                    // Downscale proportionally if very large (max 1200px wide)
+                    const MAX_SIDE = 1200;
+                    if (width > MAX_SIDE || height > MAX_SIDE) {
+                        if (width > height) { height = Math.round(height * MAX_SIDE / width); width = MAX_SIDE; }
+                        else                { width = Math.round(width * MAX_SIDE / height); height = MAX_SIDE; }
+                    }
+                    canvas.width  = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Iteratively reduce quality until size ≤ targetKB
+                    let quality = 0.85;
+                    const targetBytes = targetKB * 1024;
+                    const tryCompress = () => {
+                        canvas.toBlob((blob) => {
+                            if (!blob) { resolve(file); return; }
+                            if (blob.size <= targetBytes || quality <= 0.10) {
+                                const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+                                resolve(compressed);
+                            } else {
+                                quality = Math.max(0.10, quality - 0.10);
+                                tryCompress();
+                            }
+                        }, 'image/jpeg', quality);
+                    };
+                    tryCompress();
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    },
+
+    // ── Preview helpers ─────────────────────────────────────────────────────
+    async previewImage(input) {
+        if (!input.files || !input.files[0]) return;
+        const compressed = await this.compressImage(input.files[0]);
+        this._compressedAddImage = compressed;
+        // Show preview inside the upload label
+        const label = input.closest('label');
+        if (label) {
+            const url = URL.createObjectURL(compressed);
+            label.style.backgroundImage = `url('${url}')`;
+            label.style.backgroundSize = 'cover';
+            label.style.backgroundPosition = 'center';
+            label.querySelector('div').style.opacity = '0';
+        }
+    },
+
+    async previewEditImage(input) {
+        if (!input.files || !input.files[0]) return;
+        const compressed = await this.compressImage(input.files[0]);
+        this._compressedEditImage = compressed;
+        const url = URL.createObjectURL(compressed);
+        document.getElementById('edit-product-image').src = url;
+    },
+
+    // ── Modal helpers ───────────────────────────────────────────────────────
+    openAddModal() {
+        this._compressedAddImage = null;
+        document.getElementById('add-menu-modal').classList.remove('hidden');
+    },
     closeAddModal() {
         document.getElementById('add-menu-modal').classList.add('hidden');
         document.getElementById('add-menu-form').reset();
+        this._compressedAddImage = null;
+        // Reset label preview
+        const label = document.querySelector('#add-menu-form label[style]');
+        if (label) { label.style.backgroundImage = ''; label.querySelector('div').style.opacity = ''; }
     },
     openEditModal(id, name, category, price, stock, image) {
+        this._compressedEditImage = null;
         document.getElementById('edit-product-id').value = id;
         document.getElementById('edit-name').value = name;
         document.getElementById('edit-category').value = category;
@@ -495,17 +580,14 @@ window.menuModule = {
         document.getElementById('edit-product-image').src = image;
         document.getElementById('edit-menu-modal').classList.remove('hidden');
     },
-    closeEditModal() { document.getElementById('edit-menu-modal').classList.add('hidden'); },
-    previewEditImage(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = (e) => { document.getElementById('edit-product-image').src = e.target.result; };
-            reader.readAsDataURL(input.files[0]);
-        }
+    closeEditModal() {
+        document.getElementById('edit-menu-modal').classList.add('hidden');
+        this._compressedEditImage = null;
     },
     removeEditImage() {
         document.getElementById('edit-product-image').src = 'https://placehold.co/400x400/FFF7ED/F97316?text=No+Image';
         document.getElementById('edit-image-input').value = '';
+        this._compressedEditImage = null;
     },
     openDeleteModal(id, name) {
         document.getElementById('delete-product-id').value = id;
@@ -579,13 +661,20 @@ document.getElementById('add-category-form')?.addEventListener('submit', async f
 document.getElementById('add-menu-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const token = document.querySelector('meta[name="csrf-token"]').content;
+    const formData = new FormData(this);
+
+    // Inject compressed image if available
+    if (menuModule._compressedAddImage) {
+        formData.set('image', menuModule._compressedAddImage, menuModule._compressedAddImage.name);
+    }
+
     const res = await fetch('{{ route("menu.store") }}', {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-        body: new FormData(this)
+        body: formData
     });
     const data = await res.json();
-    if (data.success) navigatorModule.navigate(window.location.href);
+    if (data.success) { menuModule.closeAddModal(); navigatorModule.navigate(window.location.href); }
     else alert('Error: ' + (data.message || 'Gagal menambah menu'));
 });
 
@@ -595,13 +684,19 @@ document.getElementById('edit-menu-form')?.addEventListener('submit', async func
     const token = document.querySelector('meta[name="csrf-token"]').content;
     const formData = new FormData(this);
     formData.append('_method', 'POST');
+
+    // Inject compressed image if available
+    if (menuModule._compressedEditImage) {
+        formData.set('image', menuModule._compressedEditImage, menuModule._compressedEditImage.name);
+    }
+
     const res = await fetch(`/menu/${id}`, {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
         body: formData
     });
     const data = await res.json();
-    if (data.success) navigatorModule.navigate(window.location.href);
+    if (data.success) { menuModule.closeEditModal(); navigatorModule.navigate(window.location.href); }
     else alert('Error: ' + (data.message || 'Gagal update menu'));
 });
 </script>
