@@ -97,7 +97,7 @@
                 </button>
             </div>
         </div>
-        <div class="relative h-48 md:h-56">
+        <div class="relative h-48 md:h-56" id="chart-wrap">
             <canvas id="revenue-chart"></canvas>
         </div>
     </div>
@@ -232,10 +232,10 @@
 <script>
 window.reportChartData = @json($report['data']);
 window.reportMonth = {{ $month }};
-window.reportYear = {{ $year }};
+window.reportYear  = {{ $year }};
 
-// Re-init chart now that reportChartData is set
-if (window.reportModule) { reportModule.initChart(); }
+// Single explicit init — reportModule.js no longer auto-inits to prevent double-init
+if (window.reportModule) { reportModule.init(); }
 
 document.addEventListener('DOMContentLoaded', function() {
     window._filterExt = {

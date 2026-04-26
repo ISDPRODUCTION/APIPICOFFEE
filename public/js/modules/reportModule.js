@@ -1,20 +1,43 @@
 /**
  * reportModule.js
- * Manages Sales Report page: Chart.js initialisation, filter switching, export.
+ * Manages Sales Report page: Chart.js, filter switching, export.
+ * Optimised: single init, AbortController for fetch, skeleton loader.
  */
 
 const reportModule = (() => {
 
-    let chartInstance = null;
-    let currentType   = 'daily';
-    let _currentRawData = [];  // keep reference for tooltip callbacks
+    let chartInstance   = null;
+    let currentType     = 'daily';
+    let _pendingAbort   = null;  // AbortController for in-flight requests
+    let _initialized    = false; // prevent double-init
 
-    // ── Build Chart Options ────────────────────────────────────────────────────
+    // ── Skeleton loader ────────────────────────────────────────────────────────
+    function _showSkeleton() {
+        const wrap = document.getElementById('chart-wrap');
+        if (!wrap) return;
+        wrap.innerHTML = `
+            <div class="w-full h-full flex items-end justify-center gap-2 px-4 animate-pulse">
+                ${[40,60,35,75,50,90,45,65,55,80].map(h =>
+                    `<div class="flex-1 rounded-lg bg-stone-200" style="height:${h}%"></div>`
+                ).join('')}
+            </div>`;
+    }
+
+    function _showCanvas() {
+        const wrap = document.getElementById('chart-wrap');
+        if (!wrap) return;
+        // Restore canvas if it was replaced by skeleton
+        if (!document.getElementById('revenue-chart')) {
+            wrap.innerHTML = '<canvas id="revenue-chart"></canvas>';
+        }
+    }
+
+    // ── Tooltip options (closure over rawData) ─────────────────────────────────
     function _buildOptions(rawData) {
         return {
             responsive:          true,
             maintainAspectRatio: false,
-            animation: { duration: 500, easing: 'easeInOutQuart' },
+            animation:           { duration: 350 },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -28,25 +51,21 @@ const reportModule = (() => {
                     bodyFont:        { size: 12 },
                     callbacks: {
                         title: (items) => {
-                            const idx = items[0].dataIndex;
-                            const d   = rawData[idx];
+                            const d = rawData[items[0].dataIndex];
                             if (!d) return '';
-                            // Weekly: show range
                             if (d.week_start !== undefined) {
-                                const fmt = dt => new Date(dt + 'T00:00:00')
+                                const fmt = s => new Date(s + 'T00:00:00')
                                     .toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                                 return `${fmt(d.week_start)} – ${fmt(d.week_end)}`;
                             }
-                            // Daily
                             if (d.date) {
                                 return new Date(d.date + 'T00:00:00')
                                     .toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
                             }
-                            return d.label ?? d.month ?? d.year ?? '';
+                            return String(d.month ?? d.year ?? '');
                         },
                         label: (item) => {
-                            const idx = item.dataIndex;
-                            const d   = rawData[idx];
+                            const d = rawData[item.dataIndex];
                             if (!d) return '';
                             return [
                                 `Total Transaksi   ${d.transaction_count}`,
@@ -59,111 +78,105 @@ const reportModule = (() => {
             scales: {
                 x: {
                     grid:   { display: false },
-                    ticks:  {
-                        color:     '#78716C',
-                        font:      { size: 11 },
-                        maxRotation: 0,
-                    },
+                    ticks:  { color: '#78716C', font: { size: 11 }, maxRotation: 0 },
                     border: { display: false },
                 },
-                y: {
-                    display: false,
-                    grid:    { display: false },
-                    border:  { display: false },
-                },
+                y: { display: false },
             },
         };
     }
 
-    // ── Build dataset from rawData ─────────────────────────────────────────────
-    function _buildDataset(rawData, labels) {
-        const revenue = rawData.map(d => d.revenue);
-        const maxRev  = revenue.length > 0 ? Math.max(...revenue) : 0;
-
-        return {
-            label:           'Revenue',
-            data:            revenue,
-            backgroundColor: revenue.map(v => v === maxRev && v > 0 ? '#F97316' : '#E2E8F0'),
-            hoverBackgroundColor: revenue.map(v => v === maxRev && v > 0 ? '#EA580C' : '#cbd5e1'),
-            borderRadius:    10,
-            borderSkipped:   false,
-            barPercentage:   0.65,
-            categoryPercentage: 0.8,
-        };
-    }
-
-    // ── Format labels depending on data type ──────────────────────────────────
+    // ── Label formatter ────────────────────────────────────────────────────────
     function _formatLabels(rawData) {
         return rawData.map(d => {
-            // Weekly aggregated data: has week_start + week_end
             if (d.week_start !== undefined) {
-                const start = new Date(d.week_start + 'T00:00:00');
-                const end   = new Date(d.week_end   + 'T00:00:00');
-                const fmtDay = dt => dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
-                return `${fmtDay(start)} – ${fmtDay(end)}`;
+                const s = new Date(d.week_start + 'T00:00:00');
+                const e = new Date(d.week_end   + 'T00:00:00');
+                const f = dt => dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
+                return `${f(s)} – ${f(e)}`;
             }
-            // Daily data: has 'date'
             if (d.date) {
-                const dt = new Date(d.date + 'T00:00:00');
-                return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
+                return new Date(d.date + 'T00:00:00')
+                    .toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }).toUpperCase();
             }
-            // Monthly data: has 'month' number
             if (d.month !== undefined) {
                 return new Date(2000, d.month - 1, 1)
                     .toLocaleDateString('id-ID', { month: 'short' }).toUpperCase();
             }
-            return String(d.year ?? d.label ?? '');
+            return String(d.year ?? '');
         });
     }
 
-    // ── Chart initialisation ───────────────────────────────────────────────────
-    function initChart() {
+    // ── Build dataset ─────────────────────────────────────────────────────────
+    function _buildDataset(rawData) {
+        const revenue = rawData.map(d => d.revenue);
+        const maxRev  = revenue.length > 0 ? Math.max(...revenue) : 0;
+        return {
+            label:               'Revenue',
+            data:                revenue,
+            backgroundColor:     revenue.map(v => v === maxRev && v > 0 ? '#F97316' : '#E2E8F0'),
+            hoverBackgroundColor:revenue.map(v => v === maxRev && v > 0 ? '#EA580C' : '#CBD5E1'),
+            borderRadius:        10,
+            borderSkipped:       false,
+            barPercentage:       0.65,
+            categoryPercentage:  0.8,
+        };
+    }
+
+    // ── Create/recreate chart ──────────────────────────────────────────────────
+    function _createChart(rawData) {
+        _showCanvas();
         const canvas = document.getElementById('revenue-chart');
         if (!canvas || typeof Chart === 'undefined') return;
 
-        // Destroy any existing instance (both tracked and orphaned)
         if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
         const orphan = Chart.getChart(canvas);
         if (orphan) orphan.destroy();
 
-        const rawData = window.reportChartData || [];
-        _currentRawData = rawData;
-
-        const labels  = _formatLabels(rawData);
-        const dataset = _buildDataset(rawData, labels);
-
         chartInstance = new Chart(canvas, {
-            type: 'bar',
-            data: { labels, datasets: [dataset] },
+            type:    'bar',
+            data:    { labels: _formatLabels(rawData), datasets: [_buildDataset(rawData)] },
             options: _buildOptions(rawData),
         });
     }
 
-    // ── Update chart with new data ─────────────────────────────────────────────
+    // ── Public: init (called once per page) ───────────────────────────────────
+    function initChart() {
+        if (_initialized) return;      // ← prevent double-init
+        _initialized = true;
+        _createChart(window.reportChartData || []);
+    }
+
+    // ── Public: update with fresh data ────────────────────────────────────────
     function updateChart(rawData) {
-        _currentRawData = rawData;
-
-        if (!chartInstance) { initChart(); return; }
-
+        if (!chartInstance) {
+            _initialized = false;
+            window.reportChartData = rawData;
+            initChart();
+            return;
+        }
         const labels  = _formatLabels(rawData);
         const revenue = rawData.map(d => d.revenue);
         const maxRev  = revenue.length > 0 ? Math.max(...revenue) : 0;
 
-        chartInstance.data.labels = labels;
-        chartInstance.data.datasets[0].data              = revenue;
-        chartInstance.data.datasets[0].backgroundColor   = revenue.map(v => v === maxRev && v > 0 ? '#F97316' : '#E2E8F0');
-        chartInstance.data.datasets[0].hoverBackgroundColor = revenue.map(v => v === maxRev && v > 0 ? '#EA580C' : '#cbd5e1');
-
-        // Rebuild options so tooltip callbacks reference new rawData
+        chartInstance.data.labels                              = labels;
+        chartInstance.data.datasets[0].data                   = revenue;
+        chartInstance.data.datasets[0].backgroundColor        = revenue.map(v => v === maxRev && v > 0 ? '#F97316' : '#E2E8F0');
+        chartInstance.data.datasets[0].hoverBackgroundColor   = revenue.map(v => v === maxRev && v > 0 ? '#EA580C' : '#CBD5E1');
         chartInstance.options = _buildOptions(rawData);
         chartInstance.update('active');
     }
 
-    // ── Filter switch (Daily / Weekly) ─────────────────────────────────────────
+    // ── Public: Daily / Weekly toggle ─────────────────────────────────────────
     async function handleFilterChange(type) {
+        if (currentType === type) return;   // no-op if already active
         currentType = type;
 
-        // Toggle button styles
+        // Abort any in-flight request
+        if (_pendingAbort) { _pendingAbort.abort(); }
+        _pendingAbort = new AbortController();
+
+        // Update button styles immediately (no waiting)
         ['daily', 'weekly'].forEach(t => {
             const btn = document.getElementById(`btn-${t}`);
             if (!btn) return;
@@ -176,23 +189,32 @@ const reportModule = (() => {
             }
         });
 
-        // Update period label
+        // Period label
         const periodEl = document.getElementById('chart-period');
         if (periodEl) {
             periodEl.textContent = type === 'weekly'
-                ? '7 Hari Terakhir'
+                ? `Per Minggu ${window.reportYear ?? new Date().getFullYear()}`
                 : `Periode ${new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
         }
 
+        // Show skeleton while loading
+        _showSkeleton();
+
         try {
-            const month = window.reportMonth;
-            const year  = window.reportYear;
-            const res   = await apiService.get(
-                `/reports/chart-data?type=${type}&month=${month}&year=${year}`
-            );
-            updateChart(res.data || []);
+            const month  = window.reportMonth;
+            const year   = window.reportYear;
+            const url    = `/reports/chart-data?type=${type}&month=${month}&year=${year}`;
+            const res    = await fetch(url, {
+                signal:  _pendingAbort.signal,
+                headers: { 'Accept': 'application/json' },
+            });
+            if (!res.ok) throw new Error('Network error');
+            const json = await res.json();
+            updateChart(json.data || []);
         } catch (err) {
+            if (err.name === 'AbortError') return;  // request was cancelled, ignore
             console.error('Failed to load chart data', err);
+            _showCanvas();  // remove skeleton on error
         }
     }
 
@@ -206,8 +228,9 @@ const reportModule = (() => {
     function openFilter()  { /* overridden by inline script */ }
     function closeFilter() { /* overridden by inline script */ }
 
-    // ── Init ───────────────────────────────────────────────────────────────────
+    // ── Init entry point ───────────────────────────────────────────────────────
     function init() {
+        _initialized = false;  // reset so initChart() will actually run
         if (document.getElementById('revenue-chart')) {
             initChart();
         }
@@ -218,9 +241,6 @@ const reportModule = (() => {
 
 window.reportModule = reportModule;
 
-// Auto-init: works on fresh load AND SPA navigation
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => reportModule.init());
-} else {
-    reportModule.init();
-}
+// Single init: runs AFTER inline script sets window.reportChartData
+// The inline script calls reportModule.initChart() explicitly,
+// so we do NOT auto-init here to avoid double initialisation.
