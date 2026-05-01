@@ -58,13 +58,8 @@ cd /var/www/html
 php artisan config:clear
 php artisan cache:clear
 
-# Jalankan migrate otomatis dengan retry
-echo "⏳ Menjalankan database migration..."
-for i in 1 2 3 4 5; do
-    php artisan migrate --force && break
-    echo "⚠️  Migrate gagal (percobaan $i/5), coba lagi dalam 5 detik..."
-    sleep 5
-done
+# Jalankan migrate otomatis (--force wajib di production)
+php artisan migrate --force
 
 # ─── Start Nginx ─────────────────────────────────────────────────────────────
 echo "✅ Aplikasi siap. Menjalankan Nginx..."
