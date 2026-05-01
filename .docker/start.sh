@@ -23,10 +23,6 @@ APP_URL="${APP_URL:-https://localhost}"
 LOG_CHANNEL=stderr
 LOG_LEVEL=${LOG_LEVEL:-error}
 
-# ── Database ──
-# Jika pakai Cloud SQL Unix Socket, DB_HOST diisi dengan path socket:
-# /cloudsql/PROJECT_ID:REGION:INSTANCE_NAME
-# Jika pakai Cloud SQL Public IP, isi dengan IP langsung
 DB_CONNECTION="${DB_CONNECTION:-mysql}"
 DB_HOST="${DB_HOST:-127.0.0.1}"
 DB_PORT="${DB_PORT:-3306}"
@@ -58,14 +54,16 @@ cd /var/www/html
 php artisan config:clear
 php artisan cache:clear
 
-# Jalankan migrate otomatis dengan retry
-echo "⏳ Menjalankan database migration..."
-for i in 1 2 3 4 5; do
-    php artisan migrate --force && break
+# ─── Jalankan Migrate di background (agar Nginx tidak terlambat start) ───────
+(
+  echo "⏳ Menjalankan database migration..."
+  for i in 1 2 3 4 5; do
+    php artisan migrate --force && echo "✅ Migration selesai!" && break
     echo "⚠️  Migrate gagal (percobaan $i/5), coba lagi dalam 5 detik..."
     sleep 5
-done
+  done
+) &
 
-# ─── Start Nginx ─────────────────────────────────────────────────────────────
-echo "✅ Aplikasi siap. Menjalankan Nginx..."
+# ─── Start Nginx segera (agar Cloud Run health check tidak timeout) ───────────
+echo "🚀 Menjalankan Nginx di port 8080..."
 nginx -g "daemon off;" 2>&1
