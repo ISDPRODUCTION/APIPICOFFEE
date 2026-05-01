@@ -12,6 +12,13 @@ mkdir -p /var/www/html/storage/logs
 chmod -R 777 /var/www/html/storage
 chown -R www-data:www-data /var/www/html/storage
 
+# ─── Hitung DB_HOST sebelum menulis .env ────────────────────────────────────
+if [ -n "${DB_SOCKET}" ]; then
+  EFFECTIVE_DB_HOST="localhost"
+else
+  EFFECTIVE_DB_HOST="${DB_HOST:-127.0.0.1}"
+fi
+
 # ─── Tulis .env dari Environment Variables Google Cloud Run ──────────────────
 cat > /var/www/html/.env << EOF
 APP_NAME="${APP_NAME:-apipi_pos}"
@@ -24,9 +31,8 @@ LOG_CHANNEL=stderr
 LOG_LEVEL=${LOG_LEVEL:-error}
 
 # ── Database ──
-# Jika DB_SOCKET di-set (Cloud SQL Unix Socket), gunakan localhost sebagai host
 DB_CONNECTION="${DB_CONNECTION:-mysql}"
-DB_HOST="${DB_SOCKET:+localhost}${DB_SOCKET:-${DB_HOST:-127.0.0.1}}"
+DB_HOST="${EFFECTIVE_DB_HOST}"
 DB_SOCKET="${DB_SOCKET}"
 DB_PORT="${DB_PORT:-3306}"
 DB_DATABASE="${DB_DATABASE}"
@@ -54,8 +60,8 @@ EOF
 # ─── Laravel bootstrap ───────────────────────────────────────────────────────
 cd /var/www/html
 
-php artisan config:clear
-php artisan cache:clear
+php artisan config:clear 2>&1 || true
+php artisan cache:clear 2>&1 || true
 
 # ─── Start Nginx DULU agar Cloud Run bisa detect port 8080 ───────────────────
 echo "🚀 Menjalankan Nginx di port 8080..."
