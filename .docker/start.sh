@@ -1,10 +1,9 @@
 #!/bin/sh
 
-# ─── Start PHP-FPM ───────────────────────────────────────────────────────────
+# ─── 1. Start PHP-FPM di background ─────────────────────────────────────────
 php-fpm &
-sleep 2
 
-# ─── Buat direktori storage ──────────────────────────────────────────────────
+# ─── 2. Setup storage (cepat, tidak butuh DB) ────────────────────────────────
 mkdir -p /var/www/html/storage/framework/sessions
 mkdir -p /var/www/html/storage/framework/cache
 mkdir -p /var/www/html/storage/framework/views
@@ -12,7 +11,7 @@ mkdir -p /var/www/html/storage/logs
 chmod -R 777 /var/www/html/storage
 chown -R www-data:www-data /var/www/html/storage
 
-# ─── Tulis .env dari Environment Variables Google Cloud Run ──────────────────
+# ─── 3. Tulis .env dari env vars Cloud Run ───────────────────────────────────
 cat > /var/www/html/.env << EOF
 APP_NAME="${APP_NAME:-apipi_pos}"
 APP_ENV="${APP_ENV:-production}"
@@ -48,22 +47,20 @@ AWS_URL="${AWS_URL}"
 AWS_USE_PATH_STYLE_ENDPOINT="${AWS_USE_PATH_STYLE_ENDPOINT:-false}"
 EOF
 
-# ─── Laravel bootstrap ───────────────────────────────────────────────────────
-cd /var/www/html
-
-php artisan config:clear
-php artisan cache:clear
-
-# ─── Jalankan Migrate di background (agar Nginx tidak terlambat start) ───────
+# ─── 4. Jalankan artisan + migrate di background (TIDAK blok nginx) ──────────
 (
-  echo "⏳ Menjalankan database migration..."
+  sleep 5
+  cd /var/www/html
+  php artisan config:clear
+  php artisan cache:clear
+  echo "⏳ Menjalankan migration..."
   for i in 1 2 3 4 5; do
-    php artisan migrate --force && echo "✅ Migration selesai!" && break
-    echo "⚠️  Migrate gagal (percobaan $i/5), coba lagi dalam 5 detik..."
+    php artisan migrate --force && echo "✅ Migration berhasil!" && break
+    echo "⚠️  Migrate gagal percobaan $i, coba lagi 5 detik..."
     sleep 5
   done
 ) &
 
-# ─── Start Nginx segera (agar Cloud Run health check tidak timeout) ───────────
-echo "🚀 Menjalankan Nginx di port 8080..."
-nginx -g "daemon off;" 2>&1
+# ─── 5. Start Nginx SEGERA (agar Cloud Run health check tidak timeout) ────────
+echo "🚀 Nginx start di port 8080..."
+exec nginx -g "daemon off;"
