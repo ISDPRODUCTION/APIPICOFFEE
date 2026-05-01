@@ -58,9 +58,19 @@ cd /var/www/html
 php artisan config:clear
 php artisan cache:clear
 
-# Jalankan migrate otomatis (--force wajib di production)
-php artisan migrate --force
+# ─── Start Nginx DULU agar Cloud Run bisa detect port 8080 ───────────────────
+echo "🚀 Menjalankan Nginx di port 8080..."
+nginx -g "daemon off;" 2>&1 &
+NGINX_PID=$!
 
-# ─── Start Nginx ─────────────────────────────────────────────────────────────
-echo "✅ Aplikasi siap. Menjalankan Nginx..."
-nginx -g "daemon off;" 2>&1
+# Tunggu Nginx siap (max 5 detik)
+sleep 3
+
+# ─── Jalankan migrate di background (non-blocking) ───────────────────────────
+echo "🔄 Menjalankan database migration..."
+php artisan migrate --force --no-interaction 2>&1 || echo "⚠️  Migration gagal, tapi server tetap jalan."
+
+echo "✅ Aplikasi siap."
+
+# Tunggu Nginx (keep container hidup)
+wait $NGINX_PID
