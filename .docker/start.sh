@@ -24,11 +24,10 @@ LOG_CHANNEL=stderr
 LOG_LEVEL=${LOG_LEVEL:-error}
 
 # ── Database ──
-# Jika pakai Cloud SQL Unix Socket, DB_HOST diisi dengan path socket:
-# /cloudsql/PROJECT_ID:REGION:INSTANCE_NAME
-# Jika pakai Cloud SQL Public IP, isi dengan IP langsung
+# Jika DB_SOCKET di-set (Cloud SQL Unix Socket), gunakan localhost sebagai host
 DB_CONNECTION="${DB_CONNECTION:-mysql}"
-DB_HOST="${DB_HOST:-127.0.0.1}"
+DB_HOST="${DB_SOCKET:+localhost}${DB_SOCKET:-${DB_HOST:-127.0.0.1}}"
+DB_SOCKET="${DB_SOCKET}"
 DB_PORT="${DB_PORT:-3306}"
 DB_DATABASE="${DB_DATABASE}"
 DB_USERNAME="${DB_USERNAME}"
