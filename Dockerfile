@@ -29,8 +29,15 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-pl
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Copy konfigurasi nginx dan startup script
-COPY .docker/nginx.conf /etc/nginx/sites-available/default
+# Copy konfigurasi nginx
+COPY .docker/nginx.conf /etc/nginx/sites-available/apipicoffe
+
+# Hapus config default nginx (port 80) agar tidak konflik dengan port 8080
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && ln -sf /etc/nginx/sites-available/apipicoffe /etc/nginx/sites-enabled/apipicoffe \
+    && nginx -t
+
+# Copy startup script
 COPY .docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
