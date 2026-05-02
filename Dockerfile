@@ -23,7 +23,8 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --ignore-pl
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-COPY .docker/nginx.conf /etc/nginx/sites-available/default
+COPY .docker/nginx.conf /etc/nginx/conf.d/default.conf
+RUN rm -f /etc/nginx/sites-enabled/default
 COPY .docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
