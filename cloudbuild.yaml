@@ -29,3 +29,6 @@ steps:
 
 images:
   - 'gcr.io/$PROJECT_ID/projek-rpl-apipicoffe:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
