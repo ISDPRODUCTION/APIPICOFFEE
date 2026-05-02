@@ -1,81 +1,99 @@
 #!/bin/sh
+set -e
 
 # ─── Start PHP-FPM ───────────────────────────────────────────────────────────
 php-fpm &
 sleep 2
 
 # ─── Buat direktori storage ──────────────────────────────────────────────────
-mkdir -p /var/www/html/storage/framework/sessions
-mkdir -p /var/www/html/storage/framework/cache
-mkdir -p /var/www/html/storage/framework/views
-mkdir -p /var/www/html/storage/logs
+mkdir -p /var/www/html/storage/framework/sessions \
+         /var/www/html/storage/framework/cache \
+         /var/www/html/storage/framework/views \
+         /var/www/html/storage/logs
 chmod -R 777 /var/www/html/storage
 chown -R www-data:www-data /var/www/html/storage
 
-# ─── Hitung DB_HOST sebelum menulis .env ────────────────────────────────────
-if [ -n "${DB_SOCKET}" ]; then
-  EFFECTIVE_DB_HOST="localhost"
-else
-  EFFECTIVE_DB_HOST="${DB_HOST:-127.0.0.1}"
-fi
-
 # ─── Tulis .env dari Environment Variables Google Cloud Run ──────────────────
-cat > /var/www/html/.env << EOF
-APP_NAME="${APP_NAME:-apipi_pos}"
-APP_ENV="${APP_ENV:-production}"
-APP_KEY="${APP_KEY}"
-APP_DEBUG="${APP_DEBUG:-false}"
-APP_URL="${APP_URL:-https://localhost}"
+cat > /var/www/html/.env << 'ENVEOF'
+APP_NAME="PLACEHOLDER_APP_NAME"
+APP_ENV="PLACEHOLDER_APP_ENV"
+APP_KEY="PLACEHOLDER_APP_KEY"
+APP_DEBUG="PLACEHOLDER_APP_DEBUG"
+APP_URL="PLACEHOLDER_APP_URL"
 
 LOG_CHANNEL=stderr
-LOG_LEVEL=${LOG_LEVEL:-error}
+LOG_LEVEL=PLACEHOLDER_LOG_LEVEL
 
-# ── Database ──
-DB_CONNECTION="${DB_CONNECTION:-mysql}"
-DB_HOST="${EFFECTIVE_DB_HOST}"
-DB_SOCKET="${DB_SOCKET}"
-DB_PORT="${DB_PORT:-3306}"
-DB_DATABASE="${DB_DATABASE}"
-DB_USERNAME="${DB_USERNAME}"
-DB_PASSWORD="${DB_PASSWORD}"
+DB_CONNECTION="PLACEHOLDER_DB_CONNECTION"
+DB_HOST="PLACEHOLDER_DB_HOST"
+DB_PORT="PLACEHOLDER_DB_PORT"
+DB_DATABASE="PLACEHOLDER_DB_DATABASE"
+DB_USERNAME="PLACEHOLDER_DB_USERNAME"
+DB_PASSWORD="PLACEHOLDER_DB_PASSWORD"
 
-CACHE_DRIVER=${CACHE_DRIVER:-file}
-FILESYSTEM_DISK=${FILESYSTEM_DISK:-local}
-QUEUE_CONNECTION=${QUEUE_CONNECTION:-sync}
+CACHE_DRIVER=PLACEHOLDER_CACHE_DRIVER
+FILESYSTEM_DISK=PLACEHOLDER_FILESYSTEM_DISK
+QUEUE_CONNECTION=PLACEHOLDER_QUEUE_CONNECTION
 
-SESSION_DRIVER=${SESSION_DRIVER:-cookie}
-SESSION_LIFETIME=${SESSION_LIFETIME:-120}
+SESSION_DRIVER=PLACEHOLDER_SESSION_DRIVER
+SESSION_LIFETIME=PLACEHOLDER_SESSION_LIFETIME
 SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=none
 
-AWS_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID}"
-AWS_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY}"
-AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-us-east-1}"
-AWS_BUCKET="${AWS_BUCKET}"
-AWS_ENDPOINT="${AWS_ENDPOINT}"
-AWS_URL="${AWS_URL}"
-AWS_USE_PATH_STYLE_ENDPOINT="${AWS_USE_PATH_STYLE_ENDPOINT:-false}"
-EOF
+AWS_ACCESS_KEY_ID="PLACEHOLDER_AWS_ACCESS_KEY_ID"
+AWS_SECRET_ACCESS_KEY="PLACEHOLDER_AWS_SECRET_ACCESS_KEY"
+AWS_DEFAULT_REGION="PLACEHOLDER_AWS_DEFAULT_REGION"
+AWS_BUCKET="PLACEHOLDER_AWS_BUCKET"
+AWS_ENDPOINT="PLACEHOLDER_AWS_ENDPOINT"
+AWS_URL="PLACEHOLDER_AWS_URL"
+AWS_USE_PATH_STYLE_ENDPOINT="PLACEHOLDER_AWS_USE_PATH_STYLE_ENDPOINT"
+ENVEOF
 
-# ─── Laravel bootstrap ───────────────────────────────────────────────────────
+# Ganti semua placeholder dengan nilai env var yang sebenarnya
+sed -i "s|PLACEHOLDER_APP_NAME|${APP_NAME:-apipi_pos}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_APP_ENV|${APP_ENV:-production}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_APP_KEY|${APP_KEY}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_APP_DEBUG|${APP_DEBUG:-false}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_APP_URL|${APP_URL:-https://localhost}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_LOG_LEVEL|${LOG_LEVEL:-error}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_DB_CONNECTION|${DB_CONNECTION:-mysql}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_DB_HOST|${DB_HOST:-127.0.0.1}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_DB_PORT|${DB_PORT:-3306}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_DB_DATABASE|${DB_DATABASE}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_DB_USERNAME|${DB_USERNAME}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_DB_PASSWORD|${DB_PASSWORD}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_CACHE_DRIVER|${CACHE_DRIVER:-file}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_FILESYSTEM_DISK|${FILESYSTEM_DISK:-local}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_QUEUE_CONNECTION|${QUEUE_CONNECTION:-sync}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_SESSION_DRIVER|${SESSION_DRIVER:-cookie}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_SESSION_LIFETIME|${SESSION_LIFETIME:-120}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_ACCESS_KEY_ID|${AWS_ACCESS_KEY_ID}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_SECRET_ACCESS_KEY|${AWS_SECRET_ACCESS_KEY}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_DEFAULT_REGION|${AWS_DEFAULT_REGION:-us-east-1}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_BUCKET|${AWS_BUCKET}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_ENDPOINT|${AWS_ENDPOINT}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_URL|${AWS_URL}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_USE_PATH_STYLE_ENDPOINT|${AWS_USE_PATH_STYLE_ENDPOINT:-false}|g" /var/www/html/.env
+
+echo "✅ .env berhasil ditulis"
+cat /var/www/html/.env | grep DB_HOST
+
+# ─── Laravel bootstrap (non-fatal) ───────────────────────────────────────────
 cd /var/www/html
-
 php artisan config:clear 2>&1 || true
-php artisan cache:clear 2>&1 || true
+php artisan cache:clear  2>&1 || true
 
-# ─── Start Nginx DULU agar Cloud Run bisa detect port 8080 ───────────────────
-echo "🚀 Menjalankan Nginx di port 8080..."
+# ─── Start Nginx DULU agar Cloud Run detect port 8080 ────────────────────────
+echo "🚀 Menjalankan Nginx..."
 nginx -g "daemon off;" 2>&1 &
 NGINX_PID=$!
-
-# Tunggu Nginx siap (max 5 detik)
 sleep 3
 
-# ─── Jalankan migrate di background (non-blocking) ───────────────────────────
-echo "🔄 Menjalankan database migration..."
-php artisan migrate --force --no-interaction 2>&1 || echo "⚠️  Migration gagal, tapi server tetap jalan."
+# ─── Migrate (non-blocking, tidak hentikan container jika gagal) ─────────────
+echo "🔄 Menjalankan migrate..."
+php artisan migrate --force --no-interaction 2>&1 \
+  && echo "✅ Migrate sukses." \
+  || echo "⚠️  Migrate gagal — server tetap jalan."
 
-echo "✅ Aplikasi siap."
-
-# Tunggu Nginx (keep container hidup)
+echo "✅ Aplikasi siap di port 8080."
 wait $NGINX_PID
