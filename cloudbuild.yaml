@@ -4,14 +4,14 @@ steps:
     args:
       - 'build'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/projek-rpl-apipicoffe:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/projek-rpl-apipicoffe:$COMMIT_SHA'
       - '.'
 
-  # Step 2: Push ke Container Registry
+  # Step 2: Push ke Artifact Registry (repo: cloud-run-source-deploy)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/projek-rpl-apipicoffe:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/projek-rpl-apipicoffe:$COMMIT_SHA'
 
   # Step 3: Deploy ke Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -21,14 +21,15 @@ steps:
       - 'deploy'
       - 'projek-rpl-apipicoffe'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/projek-rpl-apipicoffe:$COMMIT_SHA'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/projek-rpl-apipicoffe:$COMMIT_SHA'
       - '--region'
       - 'europe-west1'
       - '--platform'
       - 'managed'
+      - '--quiet'
 
 images:
-  - 'gcr.io/$PROJECT_ID/projek-rpl-apipicoffe:$COMMIT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/projek-rpl-apipicoffe:$COMMIT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
