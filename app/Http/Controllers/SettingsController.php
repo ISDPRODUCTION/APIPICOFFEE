@@ -16,9 +16,14 @@ class SettingsController extends Controller
     {
         $employees = User::all();
 
-        $logo = Storage::disk('public')->exists('settings/logo.png')
-            ? Storage::disk('public')->url('settings/logo.png')
-            : null;
+        $logo = null;
+        try {
+            $logo = Storage::disk('s3')->exists('settings/logo.png')
+                ? Storage::disk('s3')->url('settings/logo.png')
+                : null;
+        } catch (\Exception $e) {
+            // R2 tidak tersedia, skip
+        }
 
         $settings = [
             'business_name' => config('app.name', 'Apipi Coffee'),
@@ -43,10 +48,18 @@ class SettingsController extends Controller
         ]);
 
         if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
-                Storage::disk('public')->delete($user->avatar);
+            try {
+                if ($user->avatar) {
+                    Storage::disk('s3')->delete($user->avatar);
+                }
+                $path = $request->file('avatar')->store('avatars', 's3');
+                if (!$path) {
+                    return response()->json(['success' => false, 'message' => 'Upload gagal: path kosong'], 500);
+                }
+                $validated['avatar'] = $path;
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'Storage error: ' . $e->getMessage()], 500);
             }
-            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
         $user->update($validated);
@@ -82,10 +95,14 @@ class SettingsController extends Controller
         $this->setEnvValue('APP_NAME', '"' . $request->business_name . '"');
 
         if ($request->hasFile('logo')) {
-            if (Storage::disk('public')->exists('settings/logo.png')) {
-                Storage::disk('public')->delete('settings/logo.png');
+            try {
+                if (Storage::disk('s3')->exists('settings/logo.png')) {
+                    Storage::disk('s3')->delete('settings/logo.png');
+                }
+                $request->file('logo')->storeAs('settings', 'logo.png', 's3');
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => 'Upload logo gagal: ' . $e->getMessage()], 500);
             }
-            $request->file('logo')->storeAs('settings', 'logo.png', 'public');
         }
 
         return response()->json(['success' => true]);

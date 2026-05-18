@@ -5,13 +5,11 @@ set -e
 php-fpm &
 sleep 2
 
-# ─── Buat direktori storage ──────────────────────────────────────────────────
+# ─── Buat direktori storage framework ────────────────────────────────────────
 mkdir -p /var/www/html/storage/framework/sessions \
          /var/www/html/storage/framework/cache \
          /var/www/html/storage/framework/views \
-         /var/www/html/storage/logs \
-         /var/www/html/storage/app/public/avatars \
-         /var/www/html/storage/app/public/settings
+         /var/www/html/storage/logs
 chmod -R 777 /var/www/html/storage
 chown -R www-data:www-data /var/www/html/storage
 
@@ -39,6 +37,15 @@ QUEUE_CONNECTION=PLACEHOLDER_QUEUE_CONNECTION
 
 SESSION_DRIVER=PLACEHOLDER_SESSION_DRIVER
 SESSION_LIFETIME=PLACEHOLDER_SESSION_LIFETIME
+
+# Cloudflare R2 (S3-compatible)
+AWS_ACCESS_KEY_ID="PLACEHOLDER_AWS_ACCESS_KEY_ID"
+AWS_SECRET_ACCESS_KEY="PLACEHOLDER_AWS_SECRET_ACCESS_KEY"
+AWS_DEFAULT_REGION="PLACEHOLDER_AWS_DEFAULT_REGION"
+AWS_BUCKET="PLACEHOLDER_AWS_BUCKET"
+AWS_ENDPOINT="PLACEHOLDER_AWS_ENDPOINT"
+AWS_URL="PLACEHOLDER_AWS_URL"
+AWS_USE_PATH_STYLE_ENDPOINT="PLACEHOLDER_AWS_USE_PATH_STYLE_ENDPOINT"
 ENVEOF
 
 # Ganti semua placeholder dengan nilai env var yang sebenarnya
@@ -55,19 +62,23 @@ sed -i "s|PLACEHOLDER_DB_DATABASE|${DB_DATABASE}|g"             /var/www/html/.e
 sed -i "s|PLACEHOLDER_DB_USERNAME|${DB_USERNAME}|g"             /var/www/html/.env
 sed -i "s|PLACEHOLDER_DB_PASSWORD|${DB_PASSWORD}|g"             /var/www/html/.env
 sed -i "s|PLACEHOLDER_CACHE_DRIVER|${CACHE_DRIVER:-file}|g"     /var/www/html/.env
-sed -i "s|PLACEHOLDER_FILESYSTEM_DISK|${FILESYSTEM_DISK:-public}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_FILESYSTEM_DISK|${FILESYSTEM_DISK:-s3}|g" /var/www/html/.env
 sed -i "s|PLACEHOLDER_QUEUE_CONNECTION|${QUEUE_CONNECTION:-sync}|g" /var/www/html/.env
 sed -i "s|PLACEHOLDER_SESSION_DRIVER|${SESSION_DRIVER:-file}|g" /var/www/html/.env
 sed -i "s|PLACEHOLDER_SESSION_LIFETIME|${SESSION_LIFETIME:-120}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_ACCESS_KEY_ID|${AWS_ACCESS_KEY_ID}|g"                     /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_SECRET_ACCESS_KEY|${AWS_SECRET_ACCESS_KEY}|g"             /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_DEFAULT_REGION|${AWS_DEFAULT_REGION:-auto}|g"             /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_BUCKET|${AWS_BUCKET}|g"                                   /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_ENDPOINT|${AWS_ENDPOINT}|g"                               /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_URL|${AWS_URL}|g"                                         /var/www/html/.env
+sed -i "s|PLACEHOLDER_AWS_USE_PATH_STYLE_ENDPOINT|${AWS_USE_PATH_STYLE_ENDPOINT:-true}|g" /var/www/html/.env
 
 echo "✅ .env berhasil ditulis"
 cat /var/www/html/.env | grep DB_HOST
 
-# ─── Symlink storage publik ───────────────────────────────────────────────────
-cd /var/www/html
-php artisan storage:link 2>&1 || true
-
 # ─── Laravel bootstrap ────────────────────────────────────────────────────────
+cd /var/www/html
 php artisan config:clear 2>&1 || true
 php artisan cache:clear  2>&1 || true
 
