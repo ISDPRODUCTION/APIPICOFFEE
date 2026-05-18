@@ -37,15 +37,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [\App\Http\Controllers\CategoryController::class, 'store'])->name('store');
     });
 
-    // ── Dashboard POS ─────────────────────────────────────────────────────────
-    Route::get('/', [PosController::class, 'index'])->name('pos.index');
+    // ── Dashboard POS (kasir, manager, supervisor – BUKAN admin) ─────────────
+    Route::get('/', [PosController::class, 'index'])
+        ->name('pos.index')
+        ->middleware('role:cashier,manager,supervisor');
 
     // ── Orders ────────────────────────────────────────────────────────────────
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/receipt/{orderNumber}', [OrderController::class, 'receipt'])->name('receipt.show');
 
-    // ── Menu Management ───────────────────────────────────────────────────────
-    Route::prefix('menu')->name('menu.')->middleware('role:cashier,admin,manager,supervisor')->group(function () {
+    // ── Menu Management (admin, manager, supervisor) ──────────────────────────
+    Route::prefix('menu')->name('menu.')->middleware('role:admin,manager,supervisor')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
         Route::post('/', [ProductController::class, 'store'])->name('store');
         Route::post('/{id}', [ProductController::class, 'update'])->name('update');

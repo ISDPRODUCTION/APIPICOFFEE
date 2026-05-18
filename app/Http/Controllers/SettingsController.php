@@ -15,17 +15,14 @@ class SettingsController extends Controller
     public function index(): View
     {
         $employees = User::all();
-        $logoUrl = \Illuminate\Support\Facades\Cache::remember('app_logo_url', 86400, function() {
-            try {
-                return Storage::disk('s3')->exists('settings/logo.png') ? Storage::disk('s3')->url('settings/logo.png') : null;
-            } catch (\Exception $e) {
-                return null;
-            }
-        });
-        
+
+        $logo = Storage::disk('public')->exists('settings/logo.png')
+            ? Storage::disk('public')->url('settings/logo.png')
+            : null;
+
         $settings = [
             'business_name' => config('app.name', 'Apipi Coffee'),
-            'logo' => $logoUrl,
+            'logo'          => $logo,
         ];
 
         return view('settings.index', compact('employees', 'settings'));
@@ -46,20 +43,10 @@ class SettingsController extends Controller
         ]);
 
         if ($request->hasFile('avatar')) {
-            try {
-                if ($user->avatar) {
-                    Storage::disk('s3')->delete($user->avatar);
-                }
-                $path = $request->file('avatar')->store('avatars', 's3');
-                
-                if (!$path) {
-                    return response()->json(['success' => false, 'message' => 'Upload gagal: path kosong'], 500);
-                }
-                
-                $validated['avatar'] = $path;
-            } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Storage error: ' . $e->getMessage()], 500);
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
             }
+            $validated['avatar'] = $request->file('avatar')->store('avatars', 'public');
         }
 
         $user->update($validated);
@@ -91,15 +78,14 @@ class SettingsController extends Controller
             'logo'          => 'nullable|image|max:2048',
         ]);
 
-        // Skip update .env, gunakan cache saja
-        cache(['business_name' => $request->business_name], now()->addYear());
+        // Update app name di .env
+        $this->setEnvValue('APP_NAME', '"' . $request->business_name . '"');
 
         if ($request->hasFile('logo')) {
-            if (Storage::disk('s3')->exists('settings/logo.png')) {
-                Storage::disk('s3')->delete('settings/logo.png');
+            if (Storage::disk('public')->exists('settings/logo.png')) {
+                Storage::disk('public')->delete('settings/logo.png');
             }
-            $request->file('logo')->storeAs('settings', 'logo.png', 's3');
-            \Illuminate\Support\Facades\Cache::forget('app_logo_url');
+            $request->file('logo')->storeAs('settings', 'logo.png', 'public');
         }
 
         return response()->json(['success' => true]);

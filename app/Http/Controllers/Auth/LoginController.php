@@ -30,10 +30,15 @@ class LoginController extends Controller
 
             Auth::user()->update(['shift_started_at' => Carbon::now()]);
 
+            // Admin selalu langsung ke Reports (agar session URL lama tidak override)
+            if (Auth::user()->role === 'admin') {
+                return redirect()->route('reports.index');
+            }
+
             return redirect()->intended(route('pos.index'));
         }
 
-        return back()->withErrors(['email' => 'Invalid credentials.'])->withInput();
+        return back()->withErrors(['email' => 'kata sandi atau email yang anda masukan salah'])->withInput();
     }
 
     public function logout(Request $request): RedirectResponse

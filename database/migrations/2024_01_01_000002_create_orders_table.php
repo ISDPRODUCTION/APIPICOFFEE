@@ -12,7 +12,6 @@ return new class extends Migration
             $table->id();
             $table->string('order_number')->unique();
             $table->foreignId('cashier_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->unsignedBigInteger('subtotal');
             $table->unsignedBigInteger('tax');
             $table->unsignedBigInteger('total');
@@ -26,7 +25,6 @@ return new class extends Migration
             $table->index('order_date');
             $table->index('payment_method');
             $table->index('cashier_id');
-            $table->index('customer_id');
             $table->index('status');
         });
 

@@ -37,7 +37,6 @@ class ReportController extends Controller
         $type  = $request->get('type', 'daily');
 
         $data = match($type) {
-            'weekly'  => $this->reportService->getWeeklyReport($year),
             'monthly' => $this->reportService->getMonthlyReport($year),
             'yearly'  => $this->reportService->getYearlyReport(),
             default   => $this->reportService->getDailyReport($month, $year),
@@ -69,17 +68,27 @@ class ReportController extends Controller
             'order_number' => $o->order_number,
             'time'         => Carbon::parse($o->order_date)->format('H:i'),
             'items'        => $o->items->map(fn($i) => $i->quantity . 'x ' . $i->product_name)->join(', '),
-            'total'        => 'Rp ' . number_format($o->total ?? 0, 0, ',', '.'),
+            'total'        => 'Rp ' . number_format($o->total, 0, ',', '.'),
             'status'       => $o->status,
         ]);
 
+        // Chart data: group per HARI agar setiap bar = 1 hari
+        $chartData = Order::selectRaw('DATE(order_date) as date, COUNT(*) as transaction_count, SUM(total) as revenue')
+            ->whereBetween('order_date', [$from, $to])
+            ->where('status', 'completed')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->toArray();
+
         return response()->json([
-            'success' => true,
-            'stats'   => [
+            'success'    => true,
+            'stats'      => [
                 'revenue' => $revenue,
                 'count'   => $count,
             ],
-            'orders'  => $ordersData,
+            'orders'     => $ordersData,
+            'chart_data' => $chartData,
         ]);
     }
 

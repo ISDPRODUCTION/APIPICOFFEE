@@ -15,7 +15,6 @@ class Order extends Model
     protected $fillable = [
         'order_number',
         'cashier_id',
-        'customer_id',
         'subtotal',
         'tax',
         'total',
@@ -27,7 +26,6 @@ class Order extends Model
 
     protected $casts = [
         'cashier_id'   => 'integer',
-        'customer_id'  => 'integer',
         'subtotal'     => 'integer',
         'tax'          => 'integer',
         'total'        => 'integer',
@@ -37,11 +35,6 @@ class Order extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cashier_id');
-    }
-
-    public function customer(): BelongsTo
-    {
-        return $this->belongsTo(Customer::class);
     }
 
     public function items(): HasMany

@@ -28,5 +28,7 @@ RUN rm -f /etc/nginx/sites-enabled/default
 COPY .docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
-EXPOSE 8080
+# Railway inject PORT secara dinamis, default 8080
+ENV PORT=8080
+EXPOSE ${PORT}
 CMD ["/start.sh"]

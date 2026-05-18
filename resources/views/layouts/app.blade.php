@@ -90,15 +90,9 @@
         <div class="flex items-center gap-3 px-5 py-5 border-b border-stone-100">
             <div class="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-orange-50 flex-shrink-0">
                 @php 
-                    $logoUrl = \Illuminate\Support\Facades\Cache::remember('app_logo_url', 86400, function() {
-                        try {
-                            return \Illuminate\Support\Facades\Storage::disk('s3')->exists('settings/logo.png') 
-                                ? \Illuminate\Support\Facades\Storage::disk('s3')->url('settings/logo.png') 
-                                : null;
-                        } catch (\Exception $e) {
-                            return null;
-                        }
-                    }); 
+                    $logoUrl = \Illuminate\Support\Facades\Storage::disk('public')->exists('settings/logo.png')
+                        ? \Illuminate\Support\Facades\Storage::disk('public')->url('settings/logo.png')
+                        : null;
                 @endphp
                 @if($logoUrl)
                     <img src="{{ $logoUrl }}" alt="Logo" class="w-full h-full object-cover">
