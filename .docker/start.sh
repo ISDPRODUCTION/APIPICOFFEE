@@ -62,7 +62,13 @@ sed -i "s|PLACEHOLDER_DB_DATABASE|${DB_DATABASE}|g"             /var/www/html/.e
 sed -i "s|PLACEHOLDER_DB_USERNAME|${DB_USERNAME}|g"             /var/www/html/.env
 sed -i "s|PLACEHOLDER_DB_PASSWORD|${DB_PASSWORD}|g"             /var/www/html/.env
 sed -i "s|PLACEHOLDER_CACHE_DRIVER|${CACHE_DRIVER:-file}|g"     /var/www/html/.env
-sed -i "s|PLACEHOLDER_FILESYSTEM_DISK|${FILESYSTEM_DISK:-s3}|g" /var/www/html/.env
+if [ -n "${AWS_BUCKET}" ]; then
+  _FS_DISK="${FILESYSTEM_DISK:-s3}"
+else
+  _FS_DISK="${FILESYSTEM_DISK:-local}"
+  echo "FILESYSTEM_DISK: local (AWS_BUCKET kosong, gunakan local sampai R2 dikonfigurasi)"
+fi
+sed -i "s|PLACEHOLDER_FILESYSTEM_DISK|${_FS_DISK}|g" /var/www/html/.env
 sed -i "s|PLACEHOLDER_QUEUE_CONNECTION|${QUEUE_CONNECTION:-sync}|g" /var/www/html/.env
 sed -i "s|PLACEHOLDER_SESSION_DRIVER|${SESSION_DRIVER:-file}|g" /var/www/html/.env
 sed -i "s|PLACEHOLDER_SESSION_LIFETIME|${SESSION_LIFETIME:-120}|g" /var/www/html/.env
@@ -76,6 +82,14 @@ sed -i "s|PLACEHOLDER_AWS_USE_PATH_STYLE_ENDPOINT|${AWS_USE_PATH_STYLE_ENDPOINT:
 
 echo "✅ .env berhasil ditulis"
 cat /var/www/html/.env | grep DB_HOST
+
+if [ -z "${APP_KEY}" ] || [ "${APP_KEY}" = '""' ] || [ "${APP_KEY}" = "base64:" ]; then
+  echo "FATAL: APP_KEY tidak diset di Railway Variables." >&2
+  echo "Generate: php artisan key:generate --show" >&2
+  echo "Lalu tambahkan APP_KEY di Railway → service → Variables → redeploy." >&2
+  exit 1
+fi
+echo "APP_KEY set: yes"
 
 # ─── Laravel bootstrap ────────────────────────────────────────────────────────
 cd /var/www/html

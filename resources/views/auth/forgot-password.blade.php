@@ -134,7 +134,14 @@
     <div style="margin-top:36px;display:flex;flex-direction:column;align-items:center;gap:10px;">
         <div style="display:flex;align-items:center;gap:10px;">
             <div style="width:48px;height:48px;background:#FFF7ED;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-                @php $logoUrl = \Illuminate\Support\Facades\Storage::disk('s3')->exists('settings/logo.png') ? \Illuminate\Support\Facades\Storage::disk('s3')->url('settings/logo.png') : null; @endphp
+                @php
+                    $logoUrl = null;
+                    try {
+                        $logoUrl = \Illuminate\Support\Facades\Storage::disk('s3')->exists('settings/logo.png')
+                            ? \Illuminate\Support\Facades\Storage::disk('s3')->url('settings/logo.png')
+                            : null;
+                    } catch (\Exception $e) { /* S3/R2 belum dikonfigurasi */ }
+                @endphp
                 @if($logoUrl)
                     <img src="{{ $logoUrl }}" alt="Logo" style="width:100%;height:100%;object-fit:cover;">
                 @else
