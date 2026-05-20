@@ -91,6 +91,11 @@ if [ -z "${APP_KEY}" ] || [ "${APP_KEY}" = '""' ] || [ "${APP_KEY}" = "base64:" 
 fi
 echo "APP_KEY set: yes"
 
+if [ -n "${AWS_BUCKET}" ] && [ -z "${AWS_URL}" ]; then
+  echo "WARNING: AWS_BUCKET diset tapi AWS_URL kosong — gambar tidak bisa dimuat di browser." >&2
+  echo "         Set AWS_URL ke URL publik R2 (pub-xxx.r2.dev atau custom domain)." >&2
+fi
+
 # ─── Laravel bootstrap ────────────────────────────────────────────────────────
 cd /var/www/html
 php artisan config:clear 2>&1 || true

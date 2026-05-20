@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use App\Support\StorageUrl;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -18,9 +19,9 @@ class SettingsController extends Controller
 
         $logo = null;
         try {
-            $logo = Storage::disk('s3')->exists('settings/logo.png')
-                ? Storage::disk('s3')->url('settings/logo.png')
-                : null;
+            if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
+                $logo = StorageUrl::public('settings/logo.png');
+            }
         } catch (\Exception $e) {
             // R2 tidak tersedia, skip
         }
@@ -52,7 +53,7 @@ class SettingsController extends Controller
                 if ($user->avatar) {
                     Storage::disk('s3')->delete($user->avatar);
                 }
-                $path = $request->file('avatar')->store('avatars', 's3');
+                $path = $request->file('avatar')->storePublicly('avatars', 's3');
                 if (!$path) {
                     return response()->json(['success' => false, 'message' => 'Upload gagal: path kosong'], 500);
                 }
@@ -99,13 +100,22 @@ class SettingsController extends Controller
                 if (Storage::disk('s3')->exists('settings/logo.png')) {
                     Storage::disk('s3')->delete('settings/logo.png');
                 }
-                $request->file('logo')->storeAs('settings', 'logo.png', 's3');
+                $request->file('logo')->storePubliclyAs('settings', 'logo.png', 's3');
             } catch (\Exception $e) {
                 return response()->json(['success' => false, 'message' => 'Upload logo gagal: ' . $e->getMessage()], 500);
             }
         }
 
-        return response()->json(['success' => true]);
+        $logo = null;
+        try {
+            if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
+                $logo = StorageUrl::public('settings/logo.png');
+            }
+        } catch (\Exception $e) {
+            // skip
+        }
+
+        return response()->json(['success' => true, 'logo' => $logo]);
     }
 
     // ── Employee CRUD ─────────────────────────────────────

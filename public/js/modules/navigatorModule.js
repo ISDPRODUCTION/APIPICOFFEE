@@ -173,6 +173,9 @@ const navigatorModule = (() => {
         // Find all <script> tags in the body of the fetched page
         const scripts = doc.querySelectorAll('body script');
 
+        // Hapus inline script halaman sebelumnya (hindari listener ganda)
+        document.querySelectorAll('script[data-nav-page][data-nav-inline]').forEach(s => s.remove());
+
         scripts.forEach(oldScript => {
             if (oldScript.src) {
                 // Skip any script already present in the DOM (by exact src match)
@@ -187,9 +190,9 @@ const navigatorModule = (() => {
                 // Track so subsequent navs skip it too
                 loadedSrcs.add(oldScript.src);
             } else {
-                // Inline script – wrap in self-invoking function to avoid scope pollution
-                // and fire immediately since DOMContentLoaded already ran
-                newScript.textContent = `(function(){\n${oldScript.textContent}\n// Simulate DOMContentLoaded for inline handlers\ndocument.dispatchEvent(new Event('DOMContentLoaded'));\n})();`;
+                // Inline script — jalankan di global scope agar window.*Module tersedia untuk onclick
+                newScript.setAttribute('data-nav-inline', '1');
+                newScript.textContent = oldScript.textContent;
             }
 
             document.body.appendChild(newScript);

@@ -9,6 +9,7 @@ use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Support\StorageUrl;
 use Illuminate\Support\Facades\Storage;
 
 class UnifiedApiController extends Controller
@@ -32,8 +33,8 @@ class UnifiedApiController extends Controller
         // 4. Business Settings
         $logoUrl = null;
         try {
-            if (Storage::disk('s3')->exists('settings/logo.png')) {
-                $logoUrl = Storage::disk('s3')->url('settings/logo.png');
+            if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
+                $logoUrl = StorageUrl::public('settings/logo.png');
             }
         } catch (\Exception $e) {}
 

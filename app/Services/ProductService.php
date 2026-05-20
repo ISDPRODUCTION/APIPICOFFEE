@@ -28,7 +28,7 @@ class ProductService
     public function create(array $data, ?UploadedFile $image = null): Product
     {
         if ($image) {
-            $data['image'] = $image->store('products', 's3');  // ganti ke s3
+            $data['image'] = $image->storePublicly('products', 's3');
         }
 
         if (isset($data['category'])) {
@@ -59,7 +59,7 @@ class ProductService
             if ($product->image) {
                 Storage::disk('s3')->delete($product->image);  // ganti ke s3
             }
-            $data['image'] = $image->store('products', 's3');  // ganti ke s3
+            $data['image'] = $image->storePublicly('products', 's3');
         }
 
         if (isset($data['category'])) {

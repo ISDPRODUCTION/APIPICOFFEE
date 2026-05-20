@@ -45,7 +45,7 @@ class Product extends Model
     public function getImageUrlAttribute(): string
     {
         if ($this->image) {
-            return \Illuminate\Support\Facades\Storage::disk('s3')->url($this->image);
+            return \App\Support\StorageUrl::public($this->image) ?? asset('images/placeholder.png');
         }
         return asset('images/placeholder.png');
     }

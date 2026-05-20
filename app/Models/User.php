@@ -44,7 +44,8 @@ class User extends Authenticatable
     public function getAvatarUrlAttribute(): string
     {
         if ($this->avatar) {
-            return \Illuminate\Support\Facades\Storage::disk('s3')->url($this->avatar);
+            return \App\Support\StorageUrl::public($this->avatar)
+                ?? 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=F97316&color=fff';
         }
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=F97316&color=fff';
     }

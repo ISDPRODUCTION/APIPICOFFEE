@@ -340,7 +340,7 @@
 
 @push('scripts')
 <script>
-const settingsModule = {
+window.settingsModule = {
     // ── State tema ────────────────────────────────────────────────
     _currentColor: '{{ auth()->user()->theme_color ?? "#F97316" }}',
     _darkMode: {{ (auth()->user()->dark_mode ?? false) ? 'true' : 'false' }},
@@ -463,6 +463,12 @@ document.getElementById('business-identity-form')?.addEventListener('submit', as
     const data = await res.json();
     btn.textContent = 'Simpan Perubahan'; btn.disabled = false;
     if (data.success) {
+        if (data.logo) {
+            const preview = document.getElementById('logo-preview');
+            const text = document.getElementById('logo-text');
+            if (preview) { preview.src = data.logo; preview.classList.remove('hidden'); }
+            if (text) text.classList.add('hidden');
+        }
         document.getElementById('save-success-msg').classList.remove('hidden');
         setTimeout(() => document.getElementById('save-success-msg').classList.add('hidden'), 3000);
     } else { alert(data.message || 'Gagal menyimpan'); }
