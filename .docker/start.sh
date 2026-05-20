@@ -46,6 +46,7 @@ AWS_BUCKET="PLACEHOLDER_AWS_BUCKET"
 AWS_ENDPOINT="PLACEHOLDER_AWS_ENDPOINT"
 AWS_URL="PLACEHOLDER_AWS_URL"
 AWS_USE_PATH_STYLE_ENDPOINT="PLACEHOLDER_AWS_USE_PATH_STYLE_ENDPOINT"
+STORAGE_PROXY_MEDIA=PLACEHOLDER_STORAGE_PROXY_MEDIA
 ENVEOF
 
 # Ganti semua placeholder dengan nilai env var yang sebenarnya
@@ -79,6 +80,7 @@ sed -i "s|PLACEHOLDER_AWS_BUCKET|${AWS_BUCKET}|g"                               
 sed -i "s|PLACEHOLDER_AWS_ENDPOINT|${AWS_ENDPOINT}|g"                               /var/www/html/.env
 sed -i "s|PLACEHOLDER_AWS_URL|${AWS_URL}|g"                                         /var/www/html/.env
 sed -i "s|PLACEHOLDER_AWS_USE_PATH_STYLE_ENDPOINT|${AWS_USE_PATH_STYLE_ENDPOINT:-true}|g" /var/www/html/.env
+sed -i "s|PLACEHOLDER_STORAGE_PROXY_MEDIA|${STORAGE_PROXY_MEDIA:-true}|g" /var/www/html/.env
 
 echo "✅ .env berhasil ditulis"
 cat /var/www/html/.env | grep DB_HOST

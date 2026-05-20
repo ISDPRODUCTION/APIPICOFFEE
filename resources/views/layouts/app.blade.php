@@ -93,7 +93,7 @@
                     $logoUrl = null;
                     try {
                         $logoUrl = \Illuminate\Support\Facades\Storage::disk('s3')->exists('settings/logo.png')
-                            ? \Illuminate\Support\Facades\Storage::disk('s3')->url('settings/logo.png')
+                            ? \App\Support\StorageUrl::public('settings/logo.png')
                             : null;
                     } catch (\Exception $e) { /* R2 tidak tersedia */ }
                 @endphp

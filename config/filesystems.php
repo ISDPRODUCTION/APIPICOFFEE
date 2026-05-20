@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Proxy Media (R2 / S3)
+    |--------------------------------------------------------------------------
+    |
+    | true = gambar dilayani lewat /media/... di domain aplikasi (disarankan
+    | untuk R2: menghindari ERR_CERT / timeout ke pub-*.r2.dev di browser).
+    | false = URL langsung ke AWS_URL (pub-xxx.r2.dev atau custom domain).
+    |
+    */
+
+    'proxy_media' => env('STORAGE_PROXY_MEDIA', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

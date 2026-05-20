@@ -10,6 +10,12 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\Api\UnifiedApiController;
+use App\Http\Controllers\MediaController;
+
+Route::get('/media/{path}', [MediaController::class, 'show'])
+    ->where('path', '.*')
+    ->name('media.show');
+
 Route::get('/test-product-image', function() {
     $product = \App\Models\Product::first();
     return [
