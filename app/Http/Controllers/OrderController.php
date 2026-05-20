@@ -65,6 +65,9 @@ class OrderController extends Controller
             abort(404);
         }
 
-        return view('receipt.show', compact('order'));
+        $businessName = config('app.name', 'Apipi Coffee');
+        $logoUrl = \App\Support\BusinessSettings::logoUrl();
+
+        return view('receipt.show', compact('order', 'businessName', 'logoUrl'));
     }
 }

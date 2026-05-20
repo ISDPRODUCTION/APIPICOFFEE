@@ -19,15 +19,15 @@
                         : 'text-[#78716C] hover:text-[#1C1917]' }}">
                 ALL
             </button>
-            @foreach(['food' => 'FOOD', 'drinks' => 'DRINKS', 'snacks' => 'SNACKS', 'dessert' => 'DESSERT'] as $key => $label)
+            @foreach($categories as $cat)
             <button type="button"
-                data-category="{{ $key }}"
-                onclick="posModule.switchCategory('{{ $key }}')"
+                data-category="{{ $cat->slug }}"
+                onclick="posModule.switchCategory('{{ $cat->slug }}')"
                 class="category-tab pb-3 text-sm font-semibold tracking-wider transition-colors relative whitespace-nowrap flex-shrink-0
-                    {{ $category === $key
+                    {{ $category === $cat->slug
                         ? 'text-[#1C1917] after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary'
                         : 'text-[#78716C] hover:text-[#1C1917]' }}">
-                {{ $label }}
+                {{ strtoupper($cat->name) }}
             </button>
             @endforeach
         </div>

@@ -36,9 +36,12 @@
 
         <div class="flex items-center gap-2 w-full sm:w-auto sm:ml-auto overflow-x-auto">
             <div id="category-container" class="flex gap-2 flex-nowrap">
-            </div>
-            <div class="w-px h-6 bg-stone-300 mx-1 flex-shrink-0"></div>
-            <div id="category-pagination" class="flex gap-1 flex-shrink-0">
+                <a href="/menu?category=all&search={{ $search ?? '' }}"
+                   class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap {{ ($category ?? 'all') === 'all' ? 'text-primary border-b-2 border-primary' : 'text-[#78716C] hover:text-[#1C1917]' }}">All</a>
+                @foreach($allCategories as $cat)
+                <a href="/menu?category={{ $cat->slug }}&search={{ $search ?? '' }}"
+                   class="px-3 py-1.5 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap {{ ($category ?? '') === $cat->slug ? 'text-primary border-b-2 border-primary' : 'text-[#78716C] hover:text-[#1C1917]' }}">{{ $cat->name }}</a>
+                @endforeach
             </div>
         </div>
     </div>
@@ -252,6 +255,10 @@
                     <div>
                         <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Category</label>
                         <select name="category" required class="w-full px-4 py-3 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none appearance-none bg-white">
+                            <option value="">Pilih kategori</option>
+                            @foreach($allCategories as $cat)
+                            <option value="{{ $cat->slug }}">{{ $cat->name }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div>
@@ -346,6 +353,10 @@
                             <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Category</label>
                             <select id="edit-category" name="category"
                                     class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none bg-white">
+                                <option value="">Pilih kategori</option>
+                                @foreach($allCategories as $cat)
+                                <option value="{{ $cat->slug }}">{{ $cat->name }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
@@ -418,20 +429,19 @@ window.categoryModule = {
     currentPage: 1,
     currentCategory: '{{ $category ?? "all" }}',
     search: '{{ $search ?? "" }}',
+    allCategories: @json($allCategories),
 
     async loadCategories(page = 1) {
         try {
-            const [res, allRes] = await Promise.all([
-                fetch(`/categories/api?page=${page}`),
-                fetch(`/categories/api?per_page=999`)
-            ]);
+            const res = await fetch(`/categories/api?per_page=100&page=${page}`, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            });
             const data = await res.json();
-            const allData = await allRes.json();
-            
             this.currentPage = data.current_page;
+            this.allCategories = data.data;
             this.renderCategories(data.data);
             this.renderPagination(data);
-            this.populateSelects(allData.data);
+            this.populateSelects(data.data);
         } catch (e) {
             console.error("Failed to load categories", e);
         }
@@ -465,7 +475,7 @@ window.categoryModule = {
         const addSelect = document.querySelector('select[name="category"]');
         const editSelect = document.getElementById('edit-category');
         if (!addSelect || !editSelect) return;
-        let options = '<option value="">Select category</option>';
+        let options = '<option value="">Pilih kategori</option>';
         categories.forEach(cat => {
             options += `<option value="${cat.slug}">${cat.name}</option>`;
         });
@@ -477,6 +487,9 @@ window.categoryModule = {
         if (currentEditVal) editSelect.value = currentEditVal;
     },
 
+    init() {
+        this.populateSelects(this.allCategories);
+    },
     openAddModal() { document.getElementById('add-category-modal').classList.remove('hidden'); },
     closeAddModal() {
         document.getElementById('add-category-modal').classList.add('hidden');
@@ -564,6 +577,7 @@ window.menuModule = {
     // ── Modal helpers ───────────────────────────────────────────────────────
     openAddModal() {
         this._compressedAddImage = null;
+        if (window.categoryModule) categoryModule.populateSelects(categoryModule.allCategories);
         document.getElementById('add-menu-modal').classList.remove('hidden');
     },
     closeAddModal() {
@@ -576,6 +590,7 @@ window.menuModule = {
     },
     openEditModal(id, name, category, price, stock, image) {
         this._compressedEditImage = null;
+        if (window.categoryModule) categoryModule.populateSelects(categoryModule.allCategories);
         document.getElementById('edit-product-id').value = id;
         document.getElementById('edit-name').value = name;
         document.getElementById('edit-category').value = category;
@@ -614,7 +629,8 @@ window.menuModule = {
     }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+function initMenuPage() {
+    categoryModule.init();
     categoryModule.loadCategories();
 
     // Wire up search input with debounce
@@ -650,7 +666,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
-});
+}
+initMenuPage();
+document.addEventListener('DOMContentLoaded', initMenuPage);
 
 document.getElementById('add-category-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -664,6 +682,11 @@ document.getElementById('add-category-form')?.addEventListener('submit', async f
     if (data.success) {
         categoryModule.closeAddModal();
         navigatorModule.clearCache();
+        if (data.category) {
+            categoryModule.allCategories.push(data.category);
+            categoryModule.renderCategories(categoryModule.allCategories);
+            categoryModule.populateSelects(categoryModule.allCategories);
+        }
         categoryModule.loadCategories(categoryModule.currentPage);
     }
     else alert('Error: ' + (data.message || 'Gagal menambah kategori'));

@@ -110,8 +110,8 @@
                         <p class="text-xs text-[#78716C] mb-3">PNG/JPG max 2MB, 500×500px.</p>
                         <div class="flex gap-2 flex-wrap">
                             <button type="button" onclick="document.getElementById('logo-file-input').click()"
-                                    class="px-3 py-1.5 bg-primary hover:bg-[#EA580C] text-white text-xs font-semibold rounded-xl transition-colors">
-                                Unggah Foto
+                                    class="px-4 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold rounded-xl transition-colors shadow-md">
+                                Upload Logo
                             </button>
                             <button type="button" onclick="settingsModule.removeLogo()"
                                     class="px-3 py-1.5 border border-stone-200 text-xs font-semibold text-[#78716C] rounded-xl hover:bg-stone-50 transition-colors">
@@ -135,7 +135,8 @@
         </div>
     </div>
 
-    {{-- Employee Management --}}
+    {{-- Employee Management (hanya manager) --}}
+    @if(auth()->user()->role === 'manager')
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="flex items-center justify-between px-4 md:px-6 py-4 md:py-5 border-b border-stone-100 gap-3">
             <div class="flex items-center gap-3 min-w-0">
@@ -335,6 +336,7 @@
         </div>
     </div>
 </div>
+@endif
 
 @endsection
 

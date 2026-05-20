@@ -107,7 +107,10 @@ const posModule = (() => {
 
     // Prefetch kategori lain agar switching berikutnya instan
     function _prefetchOthers(skipCategory) {
-        const allCategories = ['all', 'food', 'drinks', 'snacks', 'dessert'];
+        const slugs = Array.from(document.querySelectorAll('.category-tab'))
+            .map(btn => btn.dataset.category)
+            .filter(Boolean);
+        const allCategories = ['all', ...slugs.filter(s => s !== 'all')];
         allCategories.forEach(cat => {
             if (cat === skipCategory) return;
             const url = _buildUrl({ category: cat });

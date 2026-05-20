@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Services\ProductService;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
@@ -20,7 +21,8 @@ class PosController extends Controller
         $search   = $request->get('search');
 
         $products = $this->productService->getAllForPos($category, $search);
+        $categories = Category::where('is_active', true)->orderBy('name')->get();
 
-        return view('pos.index', compact('products', 'category', 'search'));
+        return view('pos.index', compact('products', 'category', 'search', 'categories'));
     }
 }

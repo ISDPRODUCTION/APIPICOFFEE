@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,8 +19,9 @@ class ProductController extends Controller
         $category = $request->get('category', 'all');
         $search   = $request->get('search');
         $products = $this->productService->getPaginated($category, $search, 8);
+        $allCategories = Category::where('is_active', true)->orderBy('name')->get();
 
-        return view('menu.index', compact('products', 'category', 'search'));
+        return view('menu.index', compact('products', 'category', 'search', 'allCategories'));
     }
 
     public function store(Request $request): JsonResponse
