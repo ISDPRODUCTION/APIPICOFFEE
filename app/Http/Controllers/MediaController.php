@@ -24,7 +24,12 @@ class MediaController extends Controller
             abort(403);
         }
 
-        $disk = Storage::disk('s3');
+        $diskName = \App\Support\StorageUrl::diskConfigured('s3') ? 's3' : 'public';
+        $disk = Storage::disk($diskName);
+
+        if (! $disk->exists($path) && $diskName === 's3') {
+            $disk = Storage::disk('public');
+        }
 
         if (! $disk->exists($path)) {
             abort(404);

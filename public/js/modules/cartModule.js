@@ -246,19 +246,20 @@ const cartModule = (() => {
             });
         }
 
-        // Search
-        const searchInput = document.getElementById('search-input');
-        if (searchInput) {
-            let searchTimer;
-            searchInput.addEventListener('input', (e) => {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(() => {
-                    posModule.loadProducts({ search: e.target.value });
-                }, 400);
-            });
-        }
-
         render(cartStore.getState());
+    }
+
+    // Delegasi event agar search tetap berfungsi setelah navigasi SPA mengganti header
+    if (!window._cartSearchDelegated) {
+        window._cartSearchDelegated = true;
+        let searchTimer;
+        document.addEventListener('input', (e) => {
+            if (e.target.id !== 'search-input' || typeof posModule === 'undefined') return;
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                posModule.loadProducts({ search: e.target.value });
+            }, 400);
+        });
     }
 
     return { addToCart, render, init, showPanel };

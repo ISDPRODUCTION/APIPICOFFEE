@@ -452,28 +452,66 @@ window.settingsModule = {
     }
 };
 
+async function parseJsonResponse(res) {
+    const text = await res.text();
+    try {
+        return JSON.parse(text);
+    } catch {
+        throw new Error(res.ok ? 'Respons server tidak valid.' : 'Server error (' + res.status + '). Coba lagi.');
+    }
+}
+
+function setSubmitLoading(btn, loading, label = 'Menyimpan...') {
+    if (!btn) return;
+    if (loading) {
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('opacity-70', 'cursor-not-allowed', 'pointer-events-none');
+        btn.innerHTML = `<span class="inline-flex items-center justify-center gap-2">
+            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>${label}
+        </span>`;
+    } else {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed', 'pointer-events-none');
+        btn.innerHTML = btn.dataset.originalHtml || 'Simpan Perubahan';
+    }
+}
+
 // ── Form submits ──────────────────────────────────────────────────────────────
 document.getElementById('business-identity-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('save-identity-btn');
-    btn.textContent = 'Menyimpan...'; btn.disabled = true;
-    const res = await fetch('{{ route("settings.identity.update") }}', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-        body: new FormData(this)
-    });
-    const data = await res.json();
-    btn.textContent = 'Simpan Perubahan'; btn.disabled = false;
-    if (data.success) {
-        if (data.logo) {
-            const preview = document.getElementById('logo-preview');
-            const text = document.getElementById('logo-text');
-            if (preview) { preview.src = data.logo; preview.classList.remove('hidden'); }
-            if (text) text.classList.add('hidden');
+    setSubmitLoading(btn, true);
+    try {
+        const res = await fetch('{{ route("settings.identity.update") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            },
+            body: new FormData(this)
+        });
+        const data = await parseJsonResponse(res);
+        if (data.success) {
+            if (data.logo) {
+                const preview = document.getElementById('logo-preview');
+                const text = document.getElementById('logo-text');
+                if (preview) { preview.src = data.logo; preview.classList.remove('hidden'); }
+                if (text) text.classList.add('hidden');
+            }
+            document.getElementById('save-success-msg').classList.remove('hidden');
+            setTimeout(() => document.getElementById('save-success-msg').classList.add('hidden'), 3000);
+        } else {
+            alert(data.message || 'Gagal menyimpan');
         }
-        document.getElementById('save-success-msg').classList.remove('hidden');
-        setTimeout(() => document.getElementById('save-success-msg').classList.add('hidden'), 3000);
-    } else { alert(data.message || 'Gagal menyimpan'); }
+    } catch (err) {
+        alert(err.message || 'Gagal menyimpan');
+    } finally {
+        setSubmitLoading(btn, false);
+    }
 });
 
 document.getElementById('add-employee-form')?.addEventListener('submit', async function(e) {

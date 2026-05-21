@@ -8,19 +8,12 @@ class BusinessSettings
 {
     public static function logoUrl(): ?string
     {
-        try {
-            if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
-                return StorageUrl::public('settings/logo.png');
-            }
-        } catch (\Throwable) {
-            // skip
-        }
-
-        return null;
+        return StorageUrl::publicForPath('settings/logo.png');
     }
 
     public static function businessName(): string
     {
-        return config('app.name', 'Apipi Coffee');
+        return \Illuminate\Support\Facades\Cache::get('settings.business_name')
+            ?? config('app.name', 'Apipi Coffee');
     }
 }

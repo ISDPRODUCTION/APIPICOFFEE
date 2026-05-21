@@ -225,8 +225,164 @@ const reportModule = (() => {
         window.open(`/reports/export?type=daily&month=${month}&year=${year}&format=xlsx`, '_blank');
     }
 
-    function openFilter()  { /* overridden by inline script */ }
-    function closeFilter() { /* overridden by inline script */ }
+    // ── Filter modal (date range) ──────────────────────────────────────────────
+    let _currentPreset = 'today';
+
+    function openFilter() {
+        const modal = document.getElementById('filter-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeFilter() {
+        const modal = document.getElementById('filter-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function selectPreset(btn) {
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('border-primary', 'text-primary');
+            b.classList.add('border-stone-200', 'text-[#78716C]');
+        });
+        btn.classList.add('border-primary', 'text-primary');
+        btn.classList.remove('border-stone-200', 'text-[#78716C]');
+        _currentPreset = btn.dataset.preset;
+        const customRange = document.getElementById('custom-date-range');
+        if (customRange) customRange.classList.toggle('hidden', _currentPreset !== 'custom');
+    }
+
+    function _getDateRange(preset) {
+        const today = new Date();
+        const fmt = d => d.toISOString().split('T')[0];
+        switch (preset) {
+            case 'today':
+                return { from: fmt(today), to: fmt(today), label: 'Hari Ini' };
+            case 'yesterday': {
+                const yest = new Date(today);
+                yest.setDate(yest.getDate() - 1);
+                return { from: fmt(yest), to: fmt(yest), label: 'Kemarin' };
+            }
+            case 'this_week': {
+                const weekStart = new Date(today);
+                weekStart.setDate(today.getDate() - today.getDay());
+                return { from: fmt(weekStart), to: fmt(today), label: 'Minggu Ini' };
+            }
+            case 'this_month':
+                return { from: fmt(new Date(today.getFullYear(), today.getMonth(), 1)), to: fmt(today), label: 'Bulan Ini' };
+            case 'last_month':
+                return {
+                    from: fmt(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+                    to: fmt(new Date(today.getFullYear(), today.getMonth(), 0)),
+                    label: 'Bulan Lalu',
+                };
+            case 'custom': {
+                const from = document.getElementById('filter-date-from')?.value;
+                const to   = document.getElementById('filter-date-to')?.value;
+                if (!from || !to) {
+                    alert('Pilih tanggal dari dan sampai!');
+                    return null;
+                }
+                return { from, to, label: `${from} s/d ${to}` };
+            }
+            default:
+                return null;
+        }
+    }
+
+    async function applyFilter() {
+        const range = _getDateRange(_currentPreset);
+        if (!range) return;
+        closeFilter();
+
+        const filterInfo = document.getElementById('filter-info');
+        const filterText = document.getElementById('filter-info-text');
+        const filterBadge = document.getElementById('filter-badge');
+        if (filterInfo) filterInfo.classList.remove('hidden');
+        if (filterText) filterText.textContent = `📅 Filter aktif: ${range.label}`;
+        if (filterBadge) filterBadge.classList.remove('hidden');
+
+        try {
+            const token = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const res = await fetch(`/reports/filter?from=${range.from}&to=${range.to}`, {
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': token },
+            });
+            const data = await res.json();
+            if (!data.success) {
+                alert(data.message || 'Gagal memuat filter');
+                return;
+            }
+
+            const revenueFormatted = 'Rp ' + new Intl.NumberFormat('id-ID').format(data.stats.revenue);
+            const statRevenue = document.getElementById('stat-revenue');
+            const statCount = document.getElementById('stat-count');
+            const statLabel = document.getElementById('stat-label-revenue');
+            if (statRevenue) statRevenue.textContent = revenueFormatted;
+            if (statCount) statCount.textContent = data.stats.count + ' Transaksi';
+            if (statLabel) statLabel.textContent = `Total Penjualan (${range.label})`;
+
+            const cards = document.getElementById('transactions-cards');
+            const tbody = document.getElementById('transactions-tbody');
+            const emptyMsg = '<div class="py-10 text-center text-sm text-[#78716C]">Tidak ada transaksi.</div>';
+            const emptyRow = '<tr><td colspan="5" class="py-10 text-center text-sm text-[#78716C]">Tidak ada transaksi.</td></tr>';
+
+            if (data.orders.length === 0) {
+                if (cards) cards.innerHTML = emptyMsg;
+                if (tbody) tbody.innerHTML = emptyRow;
+            } else {
+                if (cards) {
+                    cards.innerHTML = data.orders.map(o => `
+                        <div class="p-4 hover:bg-stone-50 transition-colors">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div>
+                                    <p class="text-sm font-bold text-[#1C1917]">#${o.order_number}</p>
+                                    <p class="text-xs text-[#78716C]">${o.time} WIB</p>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <p class="text-sm font-bold text-primary">${o.total}</p>
+                                    <span class="px-2 py-0.5 bg-green-100 text-green-600 text-xs font-bold rounded-lg uppercase">SELESAI</span>
+                                </div>
+                            </div>
+                            <p class="text-xs text-[#78716C] leading-relaxed">${o.items}</p>
+                        </div>
+                    `).join('');
+                }
+                if (tbody) {
+                    tbody.innerHTML = data.orders.map(o => `
+                        <tr class="hover:bg-stone-50 transition-colors">
+                            <td class="py-3 px-6 text-sm font-semibold text-[#1C1917] whitespace-nowrap">#${o.order_number}</td>
+                            <td class="py-3 px-4 text-sm text-[#78716C] whitespace-nowrap">${o.time} WIB</td>
+                            <td class="py-3 px-4 text-sm text-[#78716C] max-w-[200px]">${o.items}</td>
+                            <td class="py-3 px-4 text-sm font-semibold text-[#1C1917] whitespace-nowrap">${o.total}</td>
+                            <td class="py-3 px-4"><span class="px-2.5 py-1 bg-green-100 text-green-600 text-xs font-bold rounded-lg uppercase">SELESAI</span></td>
+                        </tr>
+                    `).join('');
+                }
+            }
+        } catch (err) {
+            console.error('Filter error', err);
+            alert('Gagal memuat data filter. Silakan coba lagi.');
+        }
+    }
+
+    function clearFilter() {
+        _currentPreset = 'today';
+        document.querySelectorAll('.preset-btn').forEach(b => {
+            b.classList.remove('border-primary', 'text-primary');
+            b.classList.add('border-stone-200', 'text-[#78716C]');
+        });
+        const todayBtn = document.querySelector('[data-preset="today"]');
+        if (todayBtn) {
+            todayBtn.classList.add('border-primary', 'text-primary');
+            todayBtn.classList.remove('border-stone-200', 'text-[#78716C]');
+        }
+        const filterInfo = document.getElementById('filter-info');
+        const filterBadge = document.getElementById('filter-badge');
+        const customRange = document.getElementById('custom-date-range');
+        if (filterInfo) filterInfo.classList.add('hidden');
+        if (filterBadge) filterBadge.classList.add('hidden');
+        if (customRange) customRange.classList.add('hidden');
+        closeFilter();
+        window.location.reload();
+    }
 
     // ── Init entry point ───────────────────────────────────────────────────────
     function init() {
@@ -236,7 +392,10 @@ const reportModule = (() => {
         }
     }
 
-    return { initChart, updateChart, handleFilterChange, triggerExport, openFilter, closeFilter, init };
+    return {
+        initChart, updateChart, handleFilterChange, triggerExport,
+        openFilter, closeFilter, selectPreset, applyFilter, clearFilter, init,
+    };
 })();
 
 window.reportModule = reportModule;

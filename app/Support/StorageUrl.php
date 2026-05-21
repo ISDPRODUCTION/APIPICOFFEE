@@ -50,4 +50,53 @@ class StorageUrl
         return (bool) config("filesystems.disks.{$disk}.bucket")
             && (bool) config("filesystems.disks.{$disk}.key");
     }
+
+    /** Disk untuk upload: S3/R2 jika dikonfigurasi, fallback ke public (local). */
+    public static function uploadDisk(): string
+    {
+        return self::diskConfigured('s3') ? 's3' : 'public';
+    }
+
+    public static function exists(string $path, ?string $disk = null): bool
+    {
+        $path = ltrim($path, '/');
+        $disks = $disk ? [$disk] : array_values(array_unique([self::uploadDisk(), 's3', 'public']));
+
+        foreach ($disks as $diskName) {
+            try {
+                if (Storage::disk($diskName)->exists($path)) {
+                    return true;
+                }
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return false;
+    }
+
+    public static function publicForPath(string $path): ?string
+    {
+        $path = ltrim($path, '/');
+
+        if (self::diskConfigured('s3')) {
+            try {
+                if (Storage::disk('s3')->exists($path)) {
+                    return self::public($path, 's3');
+                }
+            } catch (\Throwable) {
+                // fallback ke public disk
+            }
+        }
+
+        try {
+            if (Storage::disk('public')->exists($path)) {
+                return Storage::disk('public')->url($path);
+            }
+        } catch (\Throwable) {
+            return null;
+        }
+
+        return null;
+    }
 }

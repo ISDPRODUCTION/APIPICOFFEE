@@ -89,14 +89,7 @@
         {{-- Logo + close button (mobile) --}}
         <div class="flex items-center gap-3 px-5 py-5 border-b border-stone-100">
             <div class="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-orange-50 flex-shrink-0">
-                @php 
-                    $logoUrl = null;
-                    try {
-                        $logoUrl = \Illuminate\Support\Facades\Storage::disk('s3')->exists('settings/logo.png')
-                            ? \App\Support\StorageUrl::public('settings/logo.png')
-                            : null;
-                    } catch (\Exception $e) { /* R2 tidak tersedia */ }
-                @endphp
+                @php $logoUrl = \App\Support\BusinessSettings::logoUrl(); @endphp
                 @if($logoUrl)
                     <img src="{{ $logoUrl }}" alt="Logo" class="w-full h-full object-cover">
                 @else
@@ -180,8 +173,7 @@
             </button>
 
             <div class="flex items-center gap-3 flex-1 min-w-0">
-                @if(request()->routeIs('pos.*'))
-                <div class="flex-1 max-w-lg">
+                <div id="header-search-wrap" class="flex-1 max-w-lg {{ request()->routeIs('pos.*') ? '' : 'hidden' }}">
                     <div class="relative">
                         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
@@ -191,9 +183,7 @@
                                 value="{{ request('search') }}">
                     </div>
                 </div>
-                @else
-                <div class="flex-1"></div>
-                @endif
+                <div id="header-spacer" class="flex-1 {{ request()->routeIs('pos.*') ? 'hidden' : '' }}"></div>
             </div>
 
             {{-- Right side --}}
@@ -241,15 +231,15 @@
                     </div>
                 </div>
 
-                @if(request()->routeIs('pos.*'))
-                <button id="cart-toggle-btn"
-                        class="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center relative hover:bg-orange-200 transition-colors">
-                    <svg class="w-5 h-5 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5h15M17 21a1 1 0 100-2 1 1 0 000 2zM7 21a1 1 0 100-2 1 1 0 000 2z"/>
-                    </svg>
-                    <span id="cart-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-[#F97316] rounded-full text-white text-[9px] font-bold flex items-center justify-center">0</span>
-                </button>
-                @endif
+                <div id="header-cart-wrap" class="{{ request()->routeIs('pos.*') ? '' : 'hidden' }}">
+                    <button id="cart-toggle-btn"
+                            class="w-9 h-9 bg-orange-100 rounded-xl flex items-center justify-center relative hover:bg-orange-200 transition-colors">
+                        <svg class="w-5 h-5 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5h15M17 21a1 1 0 100-2 1 1 0 000 2zM7 21a1 1 0 100-2 1 1 0 000 2z"/>
+                        </svg>
+                        <span id="cart-badge" class="hidden absolute -top-1 -right-1 w-4 h-4 bg-[#F97316] rounded-full text-white text-[9px] font-bold flex items-center justify-center">0</span>
+                    </button>
+                </div>
             </div>
         </header>
 

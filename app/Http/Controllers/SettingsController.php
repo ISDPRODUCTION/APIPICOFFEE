@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use App\Support\StorageUrl;
 use Illuminate\Support\Facades\Storage;
@@ -17,18 +18,9 @@ class SettingsController extends Controller
     {
         $employees = User::all();
 
-        $logo = null;
-        try {
-            if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
-                $logo = StorageUrl::public('settings/logo.png');
-            }
-        } catch (\Exception $e) {
-            // R2 tidak tersedia, skip
-        }
-
         $settings = [
-            'business_name' => config('app.name', 'Apipi Coffee'),
-            'logo'          => $logo,
+            'business_name' => \App\Support\BusinessSettings::businessName(),
+            'logo'          => \App\Support\BusinessSettings::logoUrl(),
         ];
 
         return view('settings.index', compact('employees', 'settings'));
@@ -87,35 +79,47 @@ class SettingsController extends Controller
     // ── Business Identity ─────────────────────────────────
     public function updateIdentity(Request $request): JsonResponse
     {
-        $request->validate([
-            'business_name' => 'required|string|max:100',
-            'logo'          => 'nullable|image|max:2048',
-        ]);
-
-        // Update app name di .env
-        $this->setEnvValue('APP_NAME', '"' . $request->business_name . '"');
-
-        if ($request->hasFile('logo')) {
-            try {
-                if (Storage::disk('s3')->exists('settings/logo.png')) {
-                    Storage::disk('s3')->delete('settings/logo.png');
-                }
-                $request->file('logo')->storePubliclyAs('settings', 'logo.png', 's3');
-            } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Upload logo gagal: ' . $e->getMessage()], 500);
-            }
-        }
-
-        $logo = null;
         try {
-            if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
-                $logo = StorageUrl::public('settings/logo.png');
-            }
-        } catch (\Exception $e) {
-            // skip
-        }
+            $request->validate([
+                'business_name' => 'required|string|max:100',
+                'logo'          => 'nullable|image|max:2048',
+            ]);
 
-        return response()->json(['success' => true, 'logo' => $logo]);
+            Cache::forever('settings.business_name', $request->business_name);
+            $this->setEnvValue('APP_NAME', '"' . $request->business_name . '"');
+
+            if ($request->hasFile('logo')) {
+                $uploadDisk = StorageUrl::uploadDisk();
+                $logoPath   = 'settings/logo.png';
+
+                foreach (['s3', 'public'] as $disk) {
+                    try {
+                        if (Storage::disk($disk)->exists($logoPath)) {
+                            Storage::disk($disk)->delete($logoPath);
+                        }
+                    } catch (\Exception $e) {
+                        // skip
+                    }
+                }
+
+                $request->file('logo')->storePubliclyAs('settings', 'logo.png', $uploadDisk);
+            }
+
+            return response()->json([
+                'success' => true,
+                'logo'    => \App\Support\BusinessSettings::logoUrl(),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => collect($e->errors())->flatten()->first(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     // ── Employee CRUD ─────────────────────────────────────
@@ -182,8 +186,16 @@ class SettingsController extends Controller
     private function setEnvValue(string $key, string $value): void
     {
         $envPath = base_path('.env');
+        if (! is_file($envPath) || ! is_writable($envPath)) {
+            return;
+        }
+
         $content = file_get_contents($envPath);
+        if ($content === false) {
+            return;
+        }
+
         $content = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $content);
-        file_put_contents($envPath, $content);
+        @file_put_contents($envPath, $content);
     }
 }

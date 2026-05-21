@@ -147,6 +147,9 @@ const navigatorModule = (() => {
             // Update sidebar active states
             updateSidebarState(url);
 
+            // Tampilkan/sembunyikan search & cart di header sesuai halaman
+            updateHeaderForRoute(url);
+
             // Re-run any inline @push('scripts') from the new page
             reinitPageScripts(doc, newMain);
 
@@ -197,6 +200,25 @@ const navigatorModule = (() => {
 
             document.body.appendChild(newScript);
         });
+    }
+
+    // ── Header: search & cart hanya di Dashboard (POS) ───────────
+    function updateHeaderForRoute(url) {
+        const path = new URL(url, window.location.origin).pathname;
+        const isPos = path === '/' || path === '';
+
+        const searchWrap = document.getElementById('header-search-wrap');
+        const spacer     = document.getElementById('header-spacer');
+        const cartWrap   = document.getElementById('header-cart-wrap');
+
+        if (searchWrap) searchWrap.classList.toggle('hidden', !isPos);
+        if (spacer)     spacer.classList.toggle('hidden', isPos);
+        if (cartWrap)   cartWrap.classList.toggle('hidden', !isPos);
+
+        if (!isPos) {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.value = '';
+        }
     }
 
     // ── Sidebar Active State ─────────────────────────────────────
@@ -294,10 +316,11 @@ const navigatorModule = (() => {
         // Push initial state
         window.history.replaceState({ url: window.location.href }, '', window.location.href);
 
+        updateHeaderForRoute(window.location.href);
         createProgressBar();
     }
 
-    return { init, navigate, prefetch, clearCache };
+    return { init, navigate, prefetch, clearCache, updateHeaderForRoute };
 })();
 
 window.navigatorModule = navigatorModule;

@@ -303,7 +303,7 @@
                             class="flex-1 py-3 text-sm font-semibold text-[#78716C] hover:text-[#1C1917] transition-colors">
                         Batal
                     </button>
-                    <button type="submit"
+                    <button type="submit" id="add-menu-submit-btn"
                             class="flex-1 py-3 bg-primary hover:bg-[#EA580C] text-white rounded-2xl text-sm font-semibold transition-colors shadow-lg shadow-orange-200">
                         Tambah Menu
                     </button>
@@ -387,7 +387,7 @@
                             class="flex-1 py-3 text-sm font-semibold text-[#78716C] hover:text-[#1C1917] transition-colors">
                         Batal
                     </button>
-                    <button type="submit"
+                    <button type="submit" id="edit-menu-submit-btn"
                             class="flex-1 py-3 bg-primary hover:bg-[#EA580C] text-white rounded-2xl text-sm font-semibold transition-colors shadow-lg shadow-orange-200">
                         Simpan Perubahan
                     </button>
@@ -692,78 +692,107 @@ document.getElementById('add-category-form')?.addEventListener('submit', async f
     else alert('Error: ' + (data.message || 'Gagal menambah kategori'));
 });
 
+function setMenuBtnLoading(btn, loading, label = 'Menyimpan...') {
+    if (!btn) return;
+    if (loading) {
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.classList.add('opacity-70', 'cursor-not-allowed', 'pointer-events-none');
+        btn.innerHTML = `<span class="inline-flex items-center justify-center gap-2">
+            <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>${label}
+        </span>`;
+    } else {
+        btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed', 'pointer-events-none');
+        btn.innerHTML = btn.dataset.originalHtml || btn.textContent;
+    }
+}
+
 document.getElementById('add-menu-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const token = document.querySelector('meta[name="csrf-token"]').content;
-    const formData = new FormData(this);
+    const btn = document.getElementById('add-menu-submit-btn');
+    setMenuBtnLoading(btn, true);
+    try {
+        const token = document.querySelector('meta[name="csrf-token"]').content;
+        const formData = new FormData(this);
 
-    // Inject compressed image if available
-    if (menuModule._compressedAddImage) {
-        formData.set('image', menuModule._compressedAddImage, menuModule._compressedAddImage.name);
-    }
-
-    const res = await fetch('{{ route("menu.store") }}', {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-        body: formData
-    });
-    const data = await res.json();
-    if (data.success) {
-        menuModule.closeAddModal();
-        navigatorModule.clearCache();
-        navigatorModule.navigate(window.location.href);
-    } else {
-        if (data.errors) {
-            const msgs = Object.values(data.errors).flat().join('\n');
-            alert(msgs);
-        } else {
-            alert(data.message || 'Gagal menambah menu');
+        if (menuModule._compressedAddImage) {
+            formData.set('image', menuModule._compressedAddImage, menuModule._compressedAddImage.name);
         }
+
+        const res = await fetch('{{ route("menu.store") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            menuModule.closeAddModal();
+            navigatorModule.clearCache();
+            navigatorModule.navigate(window.location.href);
+        } else {
+            if (data.errors) {
+                const msgs = Object.values(data.errors).flat().join('\n');
+                alert(msgs);
+            } else {
+                alert(data.message || 'Gagal menambah menu');
+            }
+        }
+    } catch (err) {
+        alert('Gagal menambah menu. Silakan coba lagi.');
+    } finally {
+        setMenuBtnLoading(btn, false);
     }
 });
 
 document.getElementById('edit-menu-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const id = document.getElementById('edit-product-id').value;
-    const token = document.querySelector('meta[name="csrf-token"]').content;
-    const formData = new FormData(this);
-    formData.append('_method', 'POST');
+    const btn = document.getElementById('edit-menu-submit-btn');
+    setMenuBtnLoading(btn, true);
+    try {
+        const id = document.getElementById('edit-product-id').value;
+        const token = document.querySelector('meta[name="csrf-token"]').content;
+        const formData = new FormData(this);
+        formData.append('_method', 'POST');
 
-    // Inject compressed image if available
-    if (menuModule._compressedEditImage) {
-        formData.set('image', menuModule._compressedEditImage, menuModule._compressedEditImage.name);
-    }
-
-    const res = await fetch(`/menu/${id}`, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
-        body: formData
-    });
-    const data = await res.json();
-    if (data.success) {
-        menuModule.closeEditModal();
-
-        // Immediately update ALL product images in the page for this product
-        // Fixes browser caching the old image URL
         if (menuModule._compressedEditImage) {
-            const freshUrl = URL.createObjectURL(menuModule._compressedEditImage);
-            document.querySelectorAll(`img[data-product-img="${id}"]`).forEach(img => {
-                img.src = freshUrl;
-            });
+            formData.set('image', menuModule._compressedEditImage, menuModule._compressedEditImage.name);
         }
 
-        navigatorModule.clearCache();
-        // Add cache-buster so browser fetches fresh HTML (not cached)
-        const bustUrl = window.location.pathname + '?_t=' + Date.now();
-        navigatorModule.navigate(bustUrl);
-    } else {
-        // Handle Laravel 422 validation errors
-        if (data.errors) {
-            const msgs = Object.values(data.errors).flat().join('\n');
-            alert(msgs);
+        const res = await fetch(`/menu/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' },
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) {
+            menuModule.closeEditModal();
+
+            if (menuModule._compressedEditImage) {
+                const freshUrl = URL.createObjectURL(menuModule._compressedEditImage);
+                document.querySelectorAll(`img[data-product-img="${id}"]`).forEach(img => {
+                    img.src = freshUrl;
+                });
+            }
+
+            navigatorModule.clearCache();
+            const bustUrl = window.location.pathname + '?_t=' + Date.now();
+            navigatorModule.navigate(bustUrl);
         } else {
-            alert(data.message || 'Gagal update menu');
+            if (data.errors) {
+                const msgs = Object.values(data.errors).flat().join('\n');
+                alert(msgs);
+            } else {
+                alert(data.message || 'Gagal update menu');
+            }
         }
+    } catch (err) {
+        alert('Gagal update menu. Silakan coba lagi.');
+    } finally {
+        setMenuBtnLoading(btn, false);
     }
 });
 </script>
