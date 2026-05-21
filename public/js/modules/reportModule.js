@@ -172,6 +172,8 @@ const reportModule = (() => {
         const wrap = document.getElementById('chart-wrap');
         if (!wrap) return;
 
+        _showSkeleton();
+
         try {
             await loadChartJs();
         } catch (e) {
@@ -183,8 +185,14 @@ const reportModule = (() => {
         _initialized = true;
         const data = window.reportChartData || [];
         _chartCache.daily = data;
+        if (window.reportWeeklyChartData) {
+            _chartCache.weekly = window.reportWeeklyChartData;
+        }
         _createChart(data);
-        _prefetchChartType('weekly');
+
+        if (!_chartCache.weekly) {
+            _prefetchChartType('weekly');
+        }
     }
 
     async function _prefetchChartType(type) {
@@ -466,6 +474,9 @@ const reportModule = (() => {
 
         window.reportChartData = window.reportChartData || [];
         _chartCache = { daily: window.reportChartData };
+        if (window.reportWeeklyChartData) {
+            _chartCache.weekly = window.reportWeeklyChartData;
+        }
 
         requestAnimationFrame(() => initChart());
     }

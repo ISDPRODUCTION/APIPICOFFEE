@@ -24,10 +24,11 @@ class ReportController extends Controller
         $type   = $request->get('type', 'daily');
 
         $report       = $this->reportService->getDailyReport($month, $year);
+        $weeklyReport = $this->reportService->getWeeklyReport($year);
         $recentOrders = $this->orderService->getRecentOrders(10);
         $stats        = $this->orderService->getDashboardStats();
 
-        return view('reports.index', compact('report', 'recentOrders', 'stats', 'month', 'year', 'type'));
+        return view('reports.index', compact('report', 'weeklyReport', 'recentOrders', 'stats', 'month', 'year', 'type'));
     }
 
     public function chartData(Request $request): JsonResponse
@@ -43,7 +44,9 @@ class ReportController extends Controller
             default   => $this->reportService->getDailyReport($month, $year),
         };
 
-        return response()->json($data);
+        return response()
+            ->json($data)
+            ->header('Cache-Control', 'private, max-age=120');
     }
 
     public function filter(Request $request): JsonResponse

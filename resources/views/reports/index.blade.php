@@ -227,10 +227,16 @@
 
 @endsection
 
+@push('styles')
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+@endpush
+
 @push('scripts')
 <script src="{{ asset('js/modules/reportModule.js') }}"></script>
 <script>
 window.reportChartData = @json($report['data']);
+window.reportWeeklyChartData = @json($weeklyReport['data']);
 window.reportMonth = {{ $month }};
 window.reportYear  = {{ $year }};
 

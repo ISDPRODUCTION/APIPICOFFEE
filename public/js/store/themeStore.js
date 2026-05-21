@@ -50,9 +50,9 @@
             aside#sidebar, header,
             .divide-stone-100 > * + * { border-color: var(--color-border) !important; }
 
-            /* ── Text colors ──────────────────────── */
-            .text-\\[\\#1C1917\\] { color: var(--color-text) !important; }
-            .text-\\[\\#78716C\\] { color: var(--color-muted) !important; }
+            /* ── Text colors (kecuali shift card — pakai class khusus) ── */
+            .text-\\[\\#1C1917\\]:not(.shift-user-name) { color: var(--color-text) !important; }
+            .text-\\[\\#78716C\\]:not(.shift-user-meta) { color: var(--color-muted) !important; }
 
             /* ── Primary accent ───────────────────── */
             .text-primary,
