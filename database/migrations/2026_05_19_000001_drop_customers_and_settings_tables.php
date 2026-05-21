@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,31 +13,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Hapus foreign key & kolom customer_id dari orders (jika masih ada)
-        if (Schema::hasColumn('orders', 'customer_id')) {
-            Schema::table('orders', function (Blueprint $table) {
-                // Drop index dulu sebelum foreign key
-                $table->dropIndex(['customer_id']);
-            });
+        if (Schema::hasTable('orders') && Schema::hasColumn('orders', 'customer_id')) {
+            $this->dropOrdersCustomerForeignKey();
 
             Schema::table('orders', function (Blueprint $table) {
-                // Drop foreign key constraint
-                $table->dropForeign(['customer_id']);
-                // Hapus kolom
                 $table->dropColumn('customer_id');
             });
         }
 
-        // 2. Drop tabel customers
         Schema::dropIfExists('customers');
-
-        // 3. Drop tabel settings
         Schema::dropIfExists('settings');
     }
 
     public function down(): void
     {
-        // Re-create settings table
         Schema::create('settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();
@@ -44,7 +34,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Re-create customers table
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -53,10 +42,45 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Re-add customer_id to orders
         Schema::table('orders', function (Blueprint $table) {
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
             $table->index('customer_id');
         });
+    }
+
+    private function dropOrdersCustomerForeignKey(): void
+    {
+        $constraints = DB::select(
+            "SELECT CONSTRAINT_NAME
+             FROM information_schema.KEY_COLUMN_USAGE
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'orders'
+               AND COLUMN_NAME = 'customer_id'
+               AND REFERENCED_TABLE_NAME IS NOT NULL"
+        );
+
+        foreach ($constraints as $row) {
+            $name = $row->CONSTRAINT_NAME;
+            DB::statement("ALTER TABLE `orders` DROP FOREIGN KEY `{$name}`");
+        }
+
+        // Index terpisah (jika masih ada setelah FK di-drop)
+        $indexes = DB::select(
+            "SELECT DISTINCT INDEX_NAME
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'orders'
+               AND COLUMN_NAME = 'customer_id'
+               AND INDEX_NAME != 'PRIMARY'"
+        );
+
+        foreach ($indexes as $row) {
+            $name = $row->INDEX_NAME;
+            try {
+                DB::statement("ALTER TABLE `orders` DROP INDEX `{$name}`");
+            } catch (\Throwable) {
+                // Index mungkin sudah ikut terhapus bersama FK
+            }
+        }
     }
 };
