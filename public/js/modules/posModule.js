@@ -78,7 +78,7 @@ const posModule = (() => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const newGrid = doc.getElementById('product-grid');
-            const newCount = doc.querySelector('h2.text-xl + span');
+            const newCount = doc.getElementById('product-count');
 
             const gridHTML = newGrid ? newGrid.innerHTML : '';
             const countText = newCount ? newCount.textContent : '';
@@ -101,7 +101,7 @@ const posModule = (() => {
         grid.innerHTML = gridHTML;
         grid.style.opacity = '1';
 
-        const countEl = document.querySelector('h2.text-xl + span');
+        const countEl = document.getElementById('product-count');
         if (countEl && countText) countEl.textContent = countText;
     }
 
@@ -124,7 +124,7 @@ const posModule = (() => {
                         const parser = new DOMParser();
                         const doc = parser.parseFromString(html, 'text/html');
                         const newGrid = doc.getElementById('product-grid');
-                        const newCount = doc.querySelector('h2.text-xl + span');
+                        const newCount = doc.getElementById('product-count');
                         _cache.set(key, {
                             gridHTML: newGrid ? newGrid.innerHTML : '',
                             countText: newCount ? newCount.textContent : ''

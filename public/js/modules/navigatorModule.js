@@ -211,11 +211,16 @@ const navigatorModule = (() => {
         return path === '/' || path === '';
     }
 
-    // Header search dipindah ke halaman POS (sticky di atas kategori)
     function updateHeaderForRoute(url) {
         const isPos = isPosRoute(url);
         const cartWrap = document.getElementById('header-cart-wrap');
         if (cartWrap) cartWrap.classList.toggle('hidden', !isPos);
+
+        const main = document.getElementById('app-main');
+        if (main) {
+            main.classList.toggle('overflow-hidden', isPos);
+            main.classList.toggle('overflow-y-auto', !isPos);
+        }
     }
 
     /** Salin visibility tombol cart di header dari respons server. */

@@ -3,25 +3,22 @@
 @section('title', 'Dashboard')
 
 @section('content')
-<div class="flex h-full relative">
-    {{-- Product Area --}}
-    <div class="flex-1 p-4 md:p-6 pb-24 md:pb-6 min-h-0">
+{{-- Toolbar tetap di atas; hanya grid menu yang scroll (sticky CSS gagal karena overflow-hidden di layout) --}}
+<div id="pos-page" class="absolute inset-0 flex flex-col min-h-0">
 
-        {{-- Pencarian + Kategori (sticky saat scroll menu) --}}
-        <div id="pos-sticky-bar"
-             class="sticky top-0 z-20 -mx-4 md:-mx-6 px-4 md:px-6 pt-1 pb-3 mb-4 border-b border-stone-200/90 shadow-sm"
-             style="background-color: var(--color-bg, #F5F5F4);">
-            <div class="relative mb-4 max-w-xl">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
-                </svg>
-                <input id="search-input" type="text" placeholder="Search menu items..."
-                       class="w-full pl-9 pr-4 py-2.5 text-sm bg-white rounded-2xl border border-stone-200 focus:ring-2 focus:ring-primary/30 outline-none shadow-sm"
-                       value="{{ request('search') }}">
-            </div>
+    <div id="pos-sticky-bar"
+         class="flex-shrink-0 z-30 px-4 md:px-6 pt-3 pb-3 border-b border-stone-200/90 shadow-sm"
+         style="background-color: var(--color-bg, #F5F5F4);">
+        <div class="relative mb-3 max-w-xl">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C] pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input id="search-input" type="text" placeholder="Search menu items..."
+                   class="w-full pl-9 pr-4 py-2.5 text-sm bg-white rounded-2xl border border-stone-200 focus:ring-2 focus:ring-primary/30 outline-none shadow-sm"
+                   value="{{ request('search') }}">
+        </div>
 
-            <div class="flex gap-4 md:gap-6 border-b border-stone-200 overflow-x-auto scrollbar-hide -mb-px">
-            {{-- Tab ALL --}}
+        <div class="flex gap-4 md:gap-6 border-b border-stone-200 overflow-x-auto scrollbar-hide -mb-px">
             <button type="button"
                 data-category="all"
                 onclick="posModule.switchCategory('all')"
@@ -42,18 +39,18 @@
                 {{ strtoupper($cat->name) }}
             </button>
             @endforeach
-            </div>
         </div>
+    </div>
 
-        {{-- Menu Header --}}
+    <div id="pos-scroll-area" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-4 md:px-6 pt-4 pb-24 md:pb-6">
+
         <div class="flex items-center justify-between mb-5">
             <div class="flex items-center gap-3">
                 <h2 class="text-xl font-bold text-[#1C1917]">Menu Items</h2>
-                <span class="text-sm text-[#78716C] font-medium">({{ $products->count() }} Items)</span>
+                <span class="text-sm text-[#78716C] font-medium">(<span id="product-count">{{ $products->count() }}</span> Items)</span>
             </div>
         </div>
 
-        {{-- Product Grid --}}
         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4" id="product-grid">
             @forelse($products as $product)
             <div class="bg-white rounded-2xl overflow-hidden shadow-sm transition-all

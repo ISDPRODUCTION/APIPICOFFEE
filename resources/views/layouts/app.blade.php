@@ -38,6 +38,15 @@
             transition: opacity 0.12s ease;
         }
 
+        /* Dashboard: toolbar fix, hanya daftar menu yang scroll */
+        #pos-page { isolation: isolate; }
+        #pos-scroll-area {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
         /* Sidebar transition */
         #sidebar {
             transition: transform 0.3s ease;
@@ -231,7 +240,7 @@
         </header>
 
         {{-- PAGE CONTENT --}}
-        <main class="flex-1 overflow-y-auto relative">
+        <main id="app-main" class="flex-1 relative {{ request()->routeIs('pos.*') ? 'overflow-hidden' : 'overflow-y-auto' }}">
             @yield('content')
         </main>
     </div>

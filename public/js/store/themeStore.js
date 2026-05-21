@@ -86,10 +86,13 @@
             }
             .nav-active svg { stroke: var(--color-primary) !important; }
 
-            /* ── POS sticky search + kategori ───────── */
+            /* ── POS toolbar (search + kategori) ───── */
             #pos-sticky-bar {
                 background-color: var(--color-bg) !important;
                 border-color: var(--color-border) !important;
+            }
+            #pos-scroll-area {
+                background-color: var(--color-bg) !important;
             }
 
             /* ── Shift status card (kontras tetap terbaca) ── */
