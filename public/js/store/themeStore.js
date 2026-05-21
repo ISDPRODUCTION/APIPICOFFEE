@@ -86,6 +86,12 @@
             }
             .nav-active svg { stroke: var(--color-primary) !important; }
 
+            /* ── POS sticky search + kategori ───────── */
+            #pos-sticky-bar {
+                background-color: var(--color-bg) !important;
+                border-color: var(--color-border) !important;
+            }
+
             /* ── Shift status card (kontras tetap terbaca) ── */
             #shift-status-card {
                 background-color: ${darkMode ? m.surface : c.light} !important;

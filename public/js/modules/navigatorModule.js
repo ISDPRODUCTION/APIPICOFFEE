@@ -149,6 +149,7 @@ const navigatorModule = (() => {
 
             // Sinkronkan header dari HTML server (hindari state navbar "nyangkut")
             syncHeaderFromDocument(doc);
+            updateHeaderForRoute(url);
 
             // Re-run any inline @push('scripts') from the new page
             reinitPageScripts(doc, newMain);
@@ -210,22 +211,24 @@ const navigatorModule = (() => {
         return path === '/' || path === '';
     }
 
-    /** Salin class visibility header dari respons server agar tidak mengikuti state lama. */
+    // Header search dipindah ke halaman POS (sticky di atas kategori)
+    function updateHeaderForRoute(url) {
+        const isPos = isPosRoute(url);
+        const cartWrap = document.getElementById('header-cart-wrap');
+        if (cartWrap) cartWrap.classList.toggle('hidden', !isPos);
+    }
+
+    /** Salin visibility tombol cart di header dari respons server. */
     function syncHeaderFromDocument(doc) {
-        const ids = ['header-search-wrap', 'header-spacer', 'header-cart-wrap'];
-        ids.forEach(id => {
-            const src = doc.getElementById(id);
-            const dst = document.getElementById(id);
-            if (src && dst) {
-                dst.className = src.className;
-            }
-        });
+        const src = doc.getElementById('header-cart-wrap');
+        const dst = document.getElementById('header-cart-wrap');
+        if (src && dst) {
+            dst.className = src.className;
+        }
     }
 
     function finalizePageForRoute(url) {
         if (!isPosRoute(url)) {
-            const searchInput = document.getElementById('search-input');
-            if (searchInput) searchInput.value = '';
             return;
         }
 
@@ -338,6 +341,7 @@ const navigatorModule = (() => {
         window.history.replaceState({ url: window.location.href }, '', window.location.href);
 
         syncHeaderFromDocument(document);
+        updateHeaderForRoute(window.location.href);
         finalizePageForRoute(window.location.href);
         createProgressBar();
     }

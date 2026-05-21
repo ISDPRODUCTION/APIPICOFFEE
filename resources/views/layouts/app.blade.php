@@ -171,19 +171,7 @@
                 </svg>
             </button>
 
-            <div class="flex items-center gap-3 flex-1 min-w-0">
-                <div id="header-search-wrap" class="flex-1 max-w-lg {{ request()->routeIs('pos.*') ? '' : 'hidden' }}">
-                    <div class="relative">
-                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#78716C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/><path stroke-linecap="round" d="M21 21l-4.35-4.35"/>
-                        </svg>
-                        <input id="search-input" type="text" placeholder="Search menu items..."
-                                class="w-full pl-9 pr-4 py-2 text-sm bg-[#F5F5F4] rounded-full border-0 focus:ring-2 focus:ring-[#F97316]/30 outline-none"
-                                value="{{ request('search') }}">
-                    </div>
-                </div>
-                <div id="header-spacer" class="flex-1 {{ request()->routeIs('pos.*') ? 'hidden' : '' }}"></div>
-            </div>
+            <div class="flex-1 min-w-0"></div>
 
             {{-- Right side --}}
             <div class="flex items-center gap-2 flex-shrink-0">
