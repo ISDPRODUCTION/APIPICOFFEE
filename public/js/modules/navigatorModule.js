@@ -147,11 +147,14 @@ const navigatorModule = (() => {
             // Update sidebar active states
             updateSidebarState(url);
 
-            // Tampilkan/sembunyikan search & cart di header sesuai halaman
-            updateHeaderForRoute(url);
+            // Sinkronkan header dari HTML server (hindari state navbar "nyangkut")
+            syncHeaderFromDocument(doc);
 
             // Re-run any inline @push('scripts') from the new page
             reinitPageScripts(doc, newMain);
+
+            // Inisialisasi ulang fitur halaman POS (keranjang drag, dll.)
+            finalizePageForRoute(url);
 
             finishProgress();
 
@@ -202,22 +205,40 @@ const navigatorModule = (() => {
         });
     }
 
-    // ── Header: search & cart hanya di Dashboard (POS) ───────────
-    function updateHeaderForRoute(url) {
-        const path = new URL(url, window.location.origin).pathname;
-        const isPos = path === '/' || path === '';
+    function isPosRoute(url) {
+        const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, '') || '/';
+        return path === '/' || path === '';
+    }
 
-        const searchWrap = document.getElementById('header-search-wrap');
-        const spacer     = document.getElementById('header-spacer');
-        const cartWrap   = document.getElementById('header-cart-wrap');
+    /** Salin class visibility header dari respons server agar tidak mengikuti state lama. */
+    function syncHeaderFromDocument(doc) {
+        const ids = ['header-search-wrap', 'header-spacer', 'header-cart-wrap'];
+        ids.forEach(id => {
+            const src = doc.getElementById(id);
+            const dst = document.getElementById(id);
+            if (src && dst) {
+                dst.className = src.className;
+            }
+        });
+    }
 
-        if (searchWrap) searchWrap.classList.toggle('hidden', !isPos);
-        if (spacer)     spacer.classList.toggle('hidden', isPos);
-        if (cartWrap)   cartWrap.classList.toggle('hidden', !isPos);
-
-        if (!isPos) {
+    function finalizePageForRoute(url) {
+        if (!isPosRoute(url)) {
             const searchInput = document.getElementById('search-input');
             if (searchInput) searchInput.value = '';
+            return;
+        }
+
+        if (typeof cartModule !== 'undefined' && cartModule.reinit) {
+            cartModule.reinit();
+        }
+        if (typeof window.initPosPage === 'function') {
+            window.initPosPage();
+        }
+
+        const path = new URL(url, window.location.origin).pathname;
+        if (path.startsWith('/reports') && typeof window.initReportPage === 'function') {
+            window.initReportPage();
         }
     }
 
@@ -316,11 +337,12 @@ const navigatorModule = (() => {
         // Push initial state
         window.history.replaceState({ url: window.location.href }, '', window.location.href);
 
-        updateHeaderForRoute(window.location.href);
+        syncHeaderFromDocument(document);
+        finalizePageForRoute(window.location.href);
         createProgressBar();
     }
 
-    return { init, navigate, prefetch, clearCache, updateHeaderForRoute };
+    return { init, navigate, prefetch, clearCache, syncHeaderFromDocument, finalizePageForRoute, isPosRoute };
 })();
 
 window.navigatorModule = navigatorModule;

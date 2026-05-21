@@ -6,10 +6,27 @@
 
 const reportModule = (() => {
 
+    const CHART_JS_URL = 'https://cdn.jsdelivr.net/npm/chart.js';
     let chartInstance   = null;
     let currentType     = 'daily';
-    let _pendingAbort   = null;  // AbortController for in-flight requests
-    let _initialized    = false; // prevent double-init
+    let _pendingAbort   = null;
+    let _initialized    = false;
+    let _chartCache     = {};
+    let _chartJsPromise = null;
+
+    function loadChartJs() {
+        if (typeof Chart !== 'undefined') return Promise.resolve();
+        if (_chartJsPromise) return _chartJsPromise;
+        _chartJsPromise = new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = CHART_JS_URL;
+            s.async = true;
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error('Chart.js gagal dimuat'));
+            document.head.appendChild(s);
+        });
+        return _chartJsPromise;
+    }
 
     // ── Skeleton loader ────────────────────────────────────────────────────────
     function _showSkeleton() {
@@ -37,7 +54,7 @@ const reportModule = (() => {
         return {
             responsive:          true,
             maintainAspectRatio: false,
-            animation:           { duration: 350 },
+            animation:           { duration: 120 },
             plugins: {
                 legend: { display: false },
                 tooltip: {
@@ -107,15 +124,24 @@ const reportModule = (() => {
         });
     }
 
-    // ── Build dataset ─────────────────────────────────────────────────────────
+    function _primaryBarColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--color-primary').trim() || '#F97316';
+    }
+
+    function _hoverBarColor() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--color-hover').trim() || '#EA580C';
+    }
+
     function _buildDataset(rawData) {
         const revenue = rawData.map(d => d.revenue);
         const maxRev  = revenue.length > 0 ? Math.max(...revenue) : 0;
+        const primary = _primaryBarColor();
+        const hover   = _hoverBarColor();
         return {
             label:               'Revenue',
             data:                revenue,
-            backgroundColor:     revenue.map(v => v === maxRev && v > 0 ? '#F97316' : '#E2E8F0'),
-            hoverBackgroundColor:revenue.map(v => v === maxRev && v > 0 ? '#EA580C' : '#CBD5E1'),
+            backgroundColor:     revenue.map(v => v === maxRev && v > 0 ? primary : '#E2E8F0'),
+            hoverBackgroundColor:revenue.map(v => v === maxRev && v > 0 ? hover : '#CBD5E1'),
             borderRadius:        10,
             borderSkipped:       false,
             barPercentage:       0.65,
@@ -141,30 +167,66 @@ const reportModule = (() => {
     }
 
     // ── Public: init (called once per page) ───────────────────────────────────
-    function initChart() {
-        if (_initialized) return;      // ← prevent double-init
+    async function initChart() {
+        if (_initialized) return;
+        const wrap = document.getElementById('chart-wrap');
+        if (!wrap) return;
+
+        try {
+            await loadChartJs();
+        } catch (e) {
+            console.error(e);
+            wrap.innerHTML = '<p class="text-sm text-red-500 text-center py-8">Gagal memuat grafik.</p>';
+            return;
+        }
+
         _initialized = true;
-        _createChart(window.reportChartData || []);
+        const data = window.reportChartData || [];
+        _chartCache.daily = data;
+        _createChart(data);
+        _prefetchChartType('weekly');
+    }
+
+    async function _prefetchChartType(type) {
+        if (_chartCache[type]) return;
+        try {
+            const month = window.reportMonth ?? new Date().getMonth() + 1;
+            const year  = window.reportYear ?? new Date().getFullYear();
+            const res = await fetch(`/reports/chart-data?type=${type}&month=${month}&year=${year}`, {
+                headers: { 'Accept': 'application/json' },
+            });
+            if (!res.ok) return;
+            const json = await res.json();
+            _chartCache[type] = json.data || [];
+        } catch {
+            // prefetch gagal — tidak mengganggu tampilan awal
+        }
     }
 
     // ── Public: update with fresh data ────────────────────────────────────────
     function updateChart(rawData) {
-        if (!chartInstance) {
-            _initialized = false;
+        _showCanvas();
+        const canvas = document.getElementById('revenue-chart');
+
+        if (!canvas || typeof Chart === 'undefined') {
             window.reportChartData = rawData;
+            _initialized = false;
             initChart();
             return;
         }
-        const labels  = _formatLabels(rawData);
-        const revenue = rawData.map(d => d.revenue);
-        const maxRev  = revenue.length > 0 ? Math.max(...revenue) : 0;
 
-        chartInstance.data.labels                              = labels;
-        chartInstance.data.datasets[0].data                   = revenue;
-        chartInstance.data.datasets[0].backgroundColor        = revenue.map(v => v === maxRev && v > 0 ? '#F97316' : '#E2E8F0');
-        chartInstance.data.datasets[0].hoverBackgroundColor   = revenue.map(v => v === maxRev && v > 0 ? '#EA580C' : '#CBD5E1');
+        const bound = Chart.getChart(canvas);
+        if (!chartInstance || chartInstance.canvas !== canvas || (bound && bound !== chartInstance)) {
+            if (bound) bound.destroy();
+            if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+            _createChart(rawData);
+            return;
+        }
+
+        chartInstance.data.labels = _formatLabels(rawData);
+        chartInstance.data.datasets[0] = _buildDataset(rawData);
         chartInstance.options = _buildOptions(rawData);
-        chartInstance.update('active');
+        chartInstance.update('none');
     }
 
     // ── Public: Daily / Weekly toggle ─────────────────────────────────────────
@@ -197,10 +259,16 @@ const reportModule = (() => {
                 : `Periode ${new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
         }
 
-        // Show skeleton while loading
+        // Pakai cache → tampil instan tanpa skeleton
+        if (_chartCache[type]) {
+            updateChart(_chartCache[type]);
+            return;
+        }
+
         _showSkeleton();
 
         try {
+            await loadChartJs();
             const month  = window.reportMonth;
             const year   = window.reportYear;
             const url    = `/reports/chart-data?type=${type}&month=${month}&year=${year}`;
@@ -210,11 +278,12 @@ const reportModule = (() => {
             });
             if (!res.ok) throw new Error('Network error');
             const json = await res.json();
-            updateChart(json.data || []);
+            _chartCache[type] = json.data || [];
+            updateChart(_chartCache[type]);
         } catch (err) {
-            if (err.name === 'AbortError') return;  // request was cancelled, ignore
+            if (err.name === 'AbortError') return;
             console.error('Failed to load chart data', err);
-            _showCanvas();  // remove skeleton on error
+            _showCanvas();
         }
     }
 
@@ -386,10 +455,19 @@ const reportModule = (() => {
 
     // ── Init entry point ───────────────────────────────────────────────────────
     function init() {
-        _initialized = false;  // reset so initChart() will actually run
-        if (document.getElementById('revenue-chart')) {
-            initChart();
+        if (!document.getElementById('chart-wrap')) return;
+
+        if (chartInstance) {
+            chartInstance.destroy();
+            chartInstance = null;
         }
+        _initialized = false;
+        currentType = 'daily';
+
+        window.reportChartData = window.reportChartData || [];
+        _chartCache = { daily: window.reportChartData };
+
+        requestAnimationFrame(() => initChart());
     }
 
     return {

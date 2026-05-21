@@ -164,24 +164,30 @@ const cartModule = (() => {
         return 'Rp' + new Intl.NumberFormat('id-ID').format(amount);
     }
 
-    // ── Init ───────────────────────────────────────────────────────────────────
+    // ── Init / Reinit (setelah navigasi SPA mengganti isi main) ───────────────
     function init() {
-        cartStore.subscribe(render);
+        if (!window._cartStoreSubscribed) {
+            window._cartStoreSubscribed = true;
+            cartStore.subscribe(render);
+        }
 
-        const panel   = document.getElementById('order-panel');
+        const panel = document.getElementById('order-panel');
+        if (!panel) return;
+
         const handle  = document.getElementById('order-panel-handle');
         const overlay = document.getElementById('panel-overlay');
         const fab     = document.getElementById('mobile-cart-fab');
 
-        // Drag (desktop only)
-        if (panel && handle && window.innerWidth >= 768) {
+        // Drag (desktop) — panel baru perlu binding ulang setelah SPA swap
+        if (handle && window.innerWidth >= 768) {
             dragModule.enableDrag(panel, handle);
-            // dragModule.loadPosition(panel); // Force default CSS position (bottom-left)
+            dragModule.loadPosition(panel);
         }
 
         // Close button
         const closeBtn = document.getElementById('panel-close-btn');
-        if (closeBtn) {
+        if (closeBtn && closeBtn.dataset.cartBound !== '1') {
+            closeBtn.dataset.cartBound = '1';
             closeBtn.addEventListener('click', () => {
                 _panelManuallyHidden = true;
                 panel.classList.add('hidden');
@@ -206,7 +212,8 @@ const cartModule = (() => {
         }
 
         // Mobile overlay click
-        if (overlay) {
+        if (overlay && overlay.dataset.cartBound !== '1') {
+            overlay.dataset.cartBound = '1';
             overlay.addEventListener('click', () => {
                 _panelManuallyHidden = true;
                 panel.classList.add('hidden');
@@ -226,13 +233,15 @@ const cartModule = (() => {
         }
 
         // FAB click
-        if (fab) {
+        if (fab && fab.dataset.cartBound !== '1') {
+            fab.dataset.cartBound = '1';
             fab.addEventListener('click', () => { showPanel(); });
         }
 
         // Cart toggle button (header)
         const toggleBtn = document.getElementById('cart-toggle-btn');
-        if (toggleBtn) {
+        if (toggleBtn && toggleBtn.dataset.cartBound !== '1') {
+            toggleBtn.dataset.cartBound = '1';
             toggleBtn.addEventListener('click', () => {
                 const state = cartStore.getState();
                 if (state.items.length > 0) {
@@ -262,7 +271,11 @@ const cartModule = (() => {
         });
     }
 
-    return { addToCart, render, init, showPanel };
+    function reinit() {
+        init();
+    }
+
+    return { addToCart, render, init, reinit, showPanel };
 })();
 
 window.cartModule = cartModule;

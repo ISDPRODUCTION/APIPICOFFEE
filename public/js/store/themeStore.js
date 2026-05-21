@@ -86,22 +86,19 @@
             }
             .nav-active svg { stroke: var(--color-primary) !important; }
 
-            /* ── Shift status card ────────────────── */
+            /* ── Shift status card (kontras tetap terbaca) ── */
             #shift-status-card {
-                background-color: var(--color-light) !important;
+                background-color: ${darkMode ? m.surface : c.light} !important;
+                border: 1px solid ${darkMode ? m.border : 'transparent'};
             }
-            #shift-status-card p.text-\\[\\#F97316\\],
-            #shift-status-card p.text-\\[\\#3B82F6\\],
-            #shift-status-card p.text-\\[\\#10B981\\],
-            #shift-status-card p.text-\\[\\#8B5CF6\\],
-            #shift-status-card p.text-\\[\\#EF4444\\] {
+            #shift-status-card .shift-label {
                 color: var(--color-primary) !important;
             }
-            #shift-status-card p.text-\\[\\#1C1917\\] {
-                color: var(--color-text) !important;
+            #shift-status-card .shift-user-name {
+                color: ${darkMode ? m.text : '#1C1917'} !important;
             }
-            #shift-status-card span.text-\\[\\#78716C\\] {
-                color: var(--color-muted) !important;
+            #shift-status-card .shift-user-meta {
+                color: ${darkMode ? m.muted : '#78716C'} !important;
             }
 
             /* ── Sidebar brand name color ─────────── */

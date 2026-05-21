@@ -27,7 +27,6 @@
         }
     </script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: #F5F5F4; }
         .nav-active { background: #FFF7ED; color: #F97316; }
@@ -151,11 +150,11 @@
 
         {{-- Shift Status --}}
         <div id="shift-status-card" class="mx-3 mb-4 p-3 bg-orange-50 rounded-2xl cursor-pointer hover:bg-orange-100 transition-colors" onclick="uiStore.toggleProfile()">
-            <p class="text-xs font-bold text-[#F97316] uppercase tracking-wider">Shift Status</p>
-            <p class="text-sm font-semibold text-[#1C1917] mt-1">{{ ucfirst(auth()->user()->role) }}: {{ auth()->user()->name }}</p>
+            <p class="shift-label text-xs font-bold text-[#F97316] uppercase tracking-wider">Shift Status</p>
+            <p class="shift-user-name text-sm font-semibold text-[#1C1917] mt-1">{{ ucfirst(auth()->user()->role) }}: {{ auth()->user()->name }}</p>
             <div class="flex items-center gap-1.5 mt-1">
                 <span class="w-2 h-2 bg-green-500 rounded-full inline-block"></span>
-                <span class="text-xs text-[#78716C]">{{ auth()->user()->shift_status }}</span>
+                <span class="shift-user-meta text-xs text-[#78716C]">{{ auth()->user()->shift_status }}</span>
             </div>
         </div>
     </aside>

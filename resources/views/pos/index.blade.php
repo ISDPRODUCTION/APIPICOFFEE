@@ -154,54 +154,49 @@
 <script src="{{ asset('js/modules/posModule.js') }}"></script>
 <script src="{{ asset('js/modules/checkoutModule.js') }}"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+window.initPosPage = function () {
     const panel = document.getElementById('order-panel');
+    if (!panel) return;
+
     const overlay = document.getElementById('panel-overlay');
     const fab = document.getElementById('mobile-cart-fab');
     const fabBadge = document.getElementById('fab-badge');
-    const closeBtn = document.getElementById('panel-close-btn');
 
-    // Hook into cartModule to show panel when item added
-    const origAddToCart = cartModule.addToCart.bind(cartModule);
-    cartModule.addToCart = function(el) {
-        origAddToCart(el);
-        if (window.innerWidth < 768) {
-            panel.classList.remove('hidden');
-            overlay.classList.remove('hidden');
-            fab.classList.add('hidden');
-        }
-    };
-
-    // Close button
-    closeBtn?.addEventListener('click', function () {
-        panel.classList.add('hidden');
-        overlay.classList.add('hidden');
-        const count = parseInt(document.getElementById('panel-item-count').textContent);
-        if (count > 0 && window.innerWidth < 768) {
-            fab.classList.remove('hidden');
-            fab.classList.add('flex');
-            fabBadge.textContent = count;
-            fabBadge.classList.remove('hidden');
-            fabBadge.classList.add('flex');
-        }
-    });
-
-    // Sync FAB badge when cart updates
-    const observer = new MutationObserver(() => {
-        const count = parseInt(document.getElementById('panel-item-count').textContent);
-        if (fabBadge) {
-            fabBadge.textContent = count;
-            if (count > 0) {
-                fabBadge.classList.remove('hidden');
-                fabBadge.classList.add('flex');
-            } else {
-                fabBadge.classList.add('hidden');
-                fab.classList.add('hidden');
+    if (!window._posAddToCartHooked) {
+        window._posAddToCartHooked = true;
+        const origAddToCart = cartModule.addToCart.bind(cartModule);
+        cartModule.addToCart = function(el) {
+            origAddToCart(el);
+            if (window.innerWidth < 768) {
+                panel.classList.remove('hidden');
+                overlay?.classList.remove('hidden');
+                fab?.classList.add('hidden');
             }
-        }
-    });
-    const itemCount = document.getElementById('panel-item-count');
-    if (itemCount) observer.observe(itemCount, { childList: true, characterData: true, subtree: true });
-});
+        };
+    }
+
+    if (!window._posFabObserver && fabBadge) {
+        window._posFabObserver = true;
+        const observer = new MutationObserver(() => {
+            const countEl = document.getElementById('panel-item-count');
+            const count = countEl ? parseInt(countEl.textContent) : 0;
+            if (fabBadge) {
+                fabBadge.textContent = count;
+                if (count > 0) {
+                    fabBadge.classList.remove('hidden');
+                    fabBadge.classList.add('flex');
+                } else {
+                    fabBadge.classList.add('hidden');
+                    fab?.classList.add('hidden');
+                }
+            }
+        });
+        const itemCount = document.getElementById('panel-item-count');
+        if (itemCount) observer.observe(itemCount, { childList: true, characterData: true, subtree: true });
+    }
+};
+
+window.initPosPage();
+document.addEventListener('DOMContentLoaded', window.initPosPage);
 </script>
 @endpush

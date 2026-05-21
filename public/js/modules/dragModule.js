@@ -6,31 +6,27 @@
 
 const dragModule = (() => {
 
+    function _getPanelCoords(element) {
+        const rect = element.getBoundingClientRect();
+        return { left: rect.left, top: rect.top };
+    }
+
     function enableDrag(element, handle) {
+        if (!element || !handle || handle.dataset.dragBound === '1') return;
+        handle.dataset.dragBound = '1';
+
         let isDragging = false;
         let startX, startY, initLeft, initTop;
 
-        handle.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX  = e.clientX;
-            startY  = e.clientY;
-            initLeft = element.offsetLeft;
-            initTop  = element.offsetTop;
-
-            handle.style.cursor = 'grabbing';
-            e.preventDefault();
-        });
-
-        document.addEventListener('mousemove', (e) => {
+        const onMove = (clientX, clientY) => {
             if (!isDragging) return;
 
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
+            const dx = clientX - startX;
+            const dy = clientY - startY;
 
             let newLeft = initLeft + dx;
             let newTop  = initTop  + dy;
 
-            // Clamp to viewport
             const clamped = constrainToViewport(newLeft, newTop, element);
             newLeft = clamped.x;
             newTop  = clamped.y;
@@ -41,15 +37,50 @@ const dragModule = (() => {
             element.style.right  = 'auto';
 
             uiStore.setPanelPosition(newLeft, newTop);
+        };
+
+        const startDrag = (clientX, clientY) => {
+            isDragging = true;
+            startX  = clientX;
+            startY  = clientY;
+            const coords = _getPanelCoords(element);
+            initLeft = coords.left;
+            initTop  = coords.top;
+            handle.style.cursor = 'grabbing';
+        };
+
+        const endDrag = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            handle.style.cursor = 'grab';
+            savePosition(element);
+        };
+
+        handle.addEventListener('mousedown', (e) => {
+            if (window.innerWidth < 768) return;
+            startDrag(e.clientX, e.clientY);
+            e.preventDefault();
         });
 
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                handle.style.cursor = 'grab';
-                savePosition(element);
-            }
-        });
+        document.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+
+        document.addEventListener('mouseup', endDrag);
+
+        handle.addEventListener('touchstart', (e) => {
+            if (window.innerWidth < 768) return;
+            const t = e.touches[0];
+            startDrag(t.clientX, t.clientY);
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const t = e.touches[0];
+            onMove(t.clientX, t.clientY);
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchend', endDrag);
     }
 
     function constrainToViewport(x, y, element) {
