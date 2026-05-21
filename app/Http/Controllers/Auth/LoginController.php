@@ -18,9 +18,16 @@ class LoginController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
+        $loginError = 'kata sandi atau email yang anda masukkan salah';
+
         $credentials = $request->validate([
             'email'    => 'required|string',
             'password' => 'required|string',
+        ], [
+            'email.required'    => $loginError,
+            'email.string'      => $loginError,
+            'password.required' => $loginError,
+            'password.string'   => $loginError,
         ]);
 
         $fieldType = filter_var($credentials['email'], FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
@@ -38,7 +45,7 @@ class LoginController extends Controller
             return redirect()->intended(route('pos.index'));
         }
 
-        return back()->withErrors(['email' => 'kata sandi atau email yang anda masukan salah'])->withInput();
+        return back()->withErrors(['email' => $loginError])->withInput();
     }
 
     public function logout(Request $request): RedirectResponse
