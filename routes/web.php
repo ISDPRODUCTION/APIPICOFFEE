@@ -81,8 +81,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/theme', [ThemeController::class, 'update'])->name('theme.update');
 
 
-        // Business Identity/Roll
-        Route::post('/identity', [SettingsController::class, 'updateIdentity'])->name('identity.update');
+        // Business Identity (hanya manager)
+        Route::post('/identity', [SettingsController::class, 'updateIdentity'])
+            ->name('identity.update')
+            ->middleware('role:manager');
 
         // Manajemen karyawan 
         Route::post('/employees', [SettingsController::class, 'storeEmployee'])

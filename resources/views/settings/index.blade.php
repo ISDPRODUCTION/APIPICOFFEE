@@ -3,6 +3,7 @@
 @section('title', 'Settings')
 
 @section('content')
+@php $isManager = auth()->user()->role === 'manager'; @endphp
 <div class="p-4 md:p-6">
     <div class="mb-6">
         <h1 class="text-2xl md:text-3xl font-bold text-[#1C1917]">Pengaturan</h1>
@@ -96,6 +97,7 @@
                                 <img id="logo-preview" src="" alt="Logo" class="w-full h-full object-cover hidden">
                             @endif
                         </div>
+                        @if($isManager)
                         <button type="button" onclick="document.getElementById('logo-file-input').click()"
                                 class="absolute bottom-0 right-0 w-6 h-6 bg-primary rounded-full flex items-center justify-center hover:bg-[#EA580C] transition-colors">
                             <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
@@ -104,10 +106,12 @@
                         </button>
                         <input type="file" id="logo-file-input" name="logo" accept="image/*" class="hidden"
                                 onchange="settingsModule.previewLogo(this)">
+                        @endif
                     </div>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-[#1C1917] mb-1">Logo Bisnis</p>
                         <p class="text-xs text-[#78716C] mb-3">PNG/JPG max 2MB, 500×500px.</p>
+                        @if($isManager)
                         <div class="flex gap-2 flex-wrap">
                             <button type="button" onclick="document.getElementById('logo-file-input').click()"
                                     class="px-4 py-2 bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-semibold rounded-xl transition-colors shadow-md">
@@ -118,25 +122,28 @@
                                 Hapus
                             </button>
                         </div>
+                        @endif
                         <p id="logo-filename" class="text-xs text-green-600 mt-1 hidden"></p>
                     </div>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-[#1C1917] mb-1.5">Nama Bisnis</label>
                     <input type="text" name="business_name" value="{{ $settings['business_name'] ?? 'Apipi Coffee' }}"
-                            class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none">
+                            @unless($isManager) readonly @endunless
+                            class="w-full px-4 py-2.5 rounded-2xl border border-stone-200 text-sm focus:ring-2 focus:ring-primary/30 outline-none {{ $isManager ? '' : 'bg-stone-50 text-[#78716C]' }}">
                 </div>
+                @if($isManager)
                 <button type="submit" id="save-identity-btn"
                         class="w-full py-2.5 bg-primary hover:bg-[#EA580C] text-white rounded-2xl text-sm font-semibold transition-colors">
                     Simpan Perubahan
                 </button>
+                @endif
                 <p id="save-success-msg" class="text-xs text-green-600 text-center mt-2 hidden">✓ Perubahan berhasil disimpan!</p>
             </form>
         </div>
     </div>
 
-    {{-- Employee Management (hanya manager) --}}
-    @if(auth()->user()->role === 'manager')
+    {{-- Employee Management --}}
     <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
         <div class="flex items-center justify-between px-4 md:px-6 py-4 md:py-5 border-b border-stone-100 gap-3">
             <div class="flex items-center gap-3 min-w-0">
@@ -150,7 +157,7 @@
                     <p class="text-xs text-[#78716C]">Atur hak akses dan status akun staf.</p>
                 </div>
             </div>
-            @if(auth()->user()->role === 'manager')
+            @if($isManager)
             <button onclick="settingsModule.openAddEmployee()"
                     class="flex-shrink-0 flex items-center gap-1.5 px-3 md:px-4 py-2 bg-primary hover:bg-[#EA580C] text-white rounded-2xl text-sm font-semibold transition-colors shadow-lg shadow-orange-200">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -169,7 +176,9 @@
                         <th class="text-left py-3 px-4 text-xs font-bold text-[#78716C] uppercase tracking-wider">Peran</th>
                         <th class="text-left py-3 px-4 text-xs font-bold text-[#78716C] uppercase tracking-wider">Email</th>
                         <th class="text-left py-3 px-4 text-xs font-bold text-[#78716C] uppercase tracking-wider">Status</th>
+                        @if($isManager)
                         <th class="text-left py-3 px-4 text-xs font-bold text-[#78716C] uppercase tracking-wider">Aksi</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-stone-100">
@@ -197,9 +206,9 @@
                                 {{ $employee->status === 'active' ? 'Aktif' : ($employee->status === 'leave' ? 'Cuti' : 'Nonaktif') }}
                             </span>
                         </td>
+                        @if($isManager)
                         <td class="py-3 px-4">
                             <div class="flex items-center gap-2">
-                                @if(auth()->user()->role === 'manager')
                                 <button onclick="settingsModule.openEditEmployee({{ $employee->id }}, '{{ addslashes($employee->name) }}', '{{ $employee->email }}', '{{ $employee->role }}', '{{ $employee->status }}')"
                                         class="w-7 h-7 flex items-center justify-center rounded-lg border border-blue-200 text-blue-500 hover:bg-blue-50 transition-colors">
                                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -212,11 +221,9 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                     </svg>
                                 </button>
-                                @else
-                                <span class="text-xs text-stone-300">—</span>
-                                @endif
                             </div>
                         </td>
+                        @endif
                     </tr>
                     @endforeach
                 </tbody>
@@ -225,6 +232,7 @@
     </div>
 </div>
 
+@if($isManager)
 {{-- Modals --}}
 <div id="add-employee-modal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="settingsModule.closeAddEmployee()"></div>
