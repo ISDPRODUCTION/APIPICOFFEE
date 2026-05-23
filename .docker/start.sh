@@ -100,8 +100,10 @@ fi
 
 # ─── Laravel bootstrap ────────────────────────────────────────────────────────
 cd /var/www/html
-php artisan config:clear 2>&1 || true
-php artisan cache:clear  2>&1 || true
+php artisan config:cache 2>&1 || true
+php artisan route:cache 2>&1 || true
+php artisan view:cache 2>&1 || true
+php artisan filament:cache-components 2>&1 || true
 
 # ─── Port: Railway inject $PORT, default 8080 ─────────────────────────────────
 APP_PORT="${PORT:-8080}"
