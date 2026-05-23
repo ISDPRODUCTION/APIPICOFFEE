@@ -31,12 +31,14 @@ class UnifiedApiController extends Controller
         $stats = $this->orderService->getDashboardStats();
 
         // 4. Business Settings
-        $logoUrl = null;
-        try {
-            if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
-                $logoUrl = StorageUrl::public('settings/logo.png');
-            }
-        } catch (\Exception $e) {}
+        $logoUrl = cache()->remember('settings_logo_url', 86400, function () {
+            try {
+                if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
+                    return StorageUrl::public('settings/logo.png');
+                }
+            } catch (\Exception $e) {}
+            return null;
+        });
 
         $settings = [
             'business_name' => cache('business_name') ?? config('app.name', 'Apipi Coffee'),
