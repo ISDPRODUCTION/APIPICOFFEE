@@ -9,6 +9,7 @@ use App\Services\ProductService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Support\BusinessSettings;
 use App\Support\StorageUrl;
 use Illuminate\Support\Facades\Storage;
 
@@ -41,8 +42,8 @@ class UnifiedApiController extends Controller
         });
 
         $settings = [
-            'business_name' => cache('business_name') ?? config('app.name', 'Apipi Coffee'),
-            'logo' => $logoUrl,
+            'business_name' => BusinessSettings::businessName(),
+            'logo'          => $logoUrl,
         ];
 
         // 5. User Profile

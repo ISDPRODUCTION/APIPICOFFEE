@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Lupa Kata Sandi – Apipi Coffe POS</title>
+    <title>Lupa Kata Sandi – {{ \App\Support\BusinessSettings::businessName() }} POS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -150,7 +150,8 @@
                     </svg>
                 @endif
             </div>
-            <span style="font-size:20px;font-weight:800;color:#1C1917;">Apipi <span style="color:#F97316;">Coffe</span></span>
+            @php [$brandMain, $brandAccent] = \App\Support\BusinessSettings::brandParts(); @endphp
+            <span style="font-size:20px;font-weight:800;color:#1C1917;">{{ $brandMain }}@if($brandAccent) <span style="color:#F97316;">{{ $brandAccent }}</span>@endif</span>
         </div>
         <p style="font-size:11px;font-weight:600;color:#B0A89E;letter-spacing:0.15em;text-transform:uppercase;">Point of Sale System V2.4</p>
     </div>

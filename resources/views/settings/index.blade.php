@@ -510,6 +510,22 @@ document.getElementById('business-identity-form')?.addEventListener('submit', as
                 if (preview) { preview.src = data.logo; preview.classList.remove('hidden'); }
                 if (text) text.classList.add('hidden');
             }
+            if (data.business_name) {
+                const parts = data.business_name.trim().split(/\s+/);
+                const main = document.getElementById('app-brand-main');
+                const accent = document.getElementById('app-brand-accent');
+                if (main) main.textContent = parts[0] || data.business_name;
+                if (accent) {
+                    if (parts.length > 1) {
+                        accent.textContent = parts.slice(1).join(' ');
+                        accent.classList.remove('hidden');
+                    } else {
+                        accent.textContent = '';
+                        accent.classList.add('hidden');
+                    }
+                }
+                document.title = data.business_name + ' – Pengaturan';
+            }
             document.getElementById('save-success-msg').classList.remove('hidden');
             setTimeout(() => document.getElementById('save-success-msg').classList.add('hidden'), 3000);
         } else {

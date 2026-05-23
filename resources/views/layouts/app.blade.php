@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Apipi Coffe') }} – @yield('title', 'POS')</title>
+    <title>{{ \App\Support\BusinessSettings::businessName() }} – @yield('title', 'POS')</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.tailwindcss.com">
@@ -86,6 +86,7 @@
     $isAdmin   = in_array($userRole, ['admin', 'manager', 'supervisor']);
     $showMenuManagement = in_array($userRole, ['admin', 'manager', 'supervisor']);
     $showPosDashboard = $userRole !== 'admin';
+    [$brandMain, $brandAccent] = \App\Support\BusinessSettings::brandParts();
 @endphp
 
 {{-- Mobile sidebar overlay --}}
@@ -107,7 +108,9 @@
                     </svg>
                 @endif
             </div>
-            <span class="font-bold text-[#1C1917] text-lg leading-none flex-1">Apipi <span class="text-[#F97316]">Coffe</span></span>
+            <span id="app-brand-name" class="font-bold text-[#1C1917] text-lg leading-none flex-1 truncate">
+                <span id="app-brand-main">{{ $brandMain }}</span>@if($brandAccent) <span id="app-brand-accent" class="text-[#F97316]">{{ $brandAccent }}</span>@endif
+            </span>
             {{-- Close btn (mobile only) --}}
             <button onclick="closeSidebar()" class="md:hidden w-7 h-7 flex items-center justify-center rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100">
                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

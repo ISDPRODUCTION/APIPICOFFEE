@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use App\Support\BusinessSettings;
 use App\Support\StorageUrl;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
@@ -85,8 +86,7 @@ class SettingsController extends Controller
                 'logo'          => 'nullable|image|max:2048',
             ]);
 
-            Cache::forever('settings.business_name', $request->business_name);
-            $this->setEnvValue('APP_NAME', '"' . $request->business_name . '"');
+            BusinessSettings::setBusinessName($request->business_name);
 
             if ($request->hasFile('logo')) {
                 $uploadDisk = StorageUrl::uploadDisk();
@@ -107,8 +107,9 @@ class SettingsController extends Controller
             }
 
             return response()->json([
-                'success' => true,
-                'logo'    => \App\Support\BusinessSettings::logoUrl(),
+                'success'       => true,
+                'logo'          => BusinessSettings::logoUrl(),
+                'business_name' => BusinessSettings::businessName(),
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
