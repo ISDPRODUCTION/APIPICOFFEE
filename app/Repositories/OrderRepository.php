@@ -18,7 +18,7 @@ class OrderRepository
 
     public function create(array $orderData, array $items): Order
     {
-        return DB::transaction(function () use ($orderData, $items) {
+        $order = DB::transaction(function () use ($orderData, $items) {
             $order = $this->model->create($orderData);
 
             foreach ($items as $item) {
@@ -34,6 +34,18 @@ class OrderRepository
 
             return $order->load('items.product', 'cashier');
         });
+
+        // Invalidasikan cache laporan agar real-time terupdate saat transaksi baru masuk
+        $year  = date('Y');
+        $month = (int) date('m');
+        try {
+            cache()->forget("report_daily_{$year}_{$month}");
+            cache()->forget("report_weekly_{$year}");
+            cache()->forget("report_monthly_{$year}");
+            cache()->forget("report_yearly");
+        } catch (\Throwable $e) {}
+
+        return $order;
     }
 
     public function findByOrderNumber(string $orderNumber): ?Order

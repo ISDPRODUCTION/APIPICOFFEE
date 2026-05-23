@@ -15,49 +15,66 @@ class ReportService
 
     public function getDailyReport(int $month, int $year): array
     {
-        $data = $this->orderRepository->getDailyReportData($month, $year);
+        $isCurrentMonth = ($month === (int) date('m') && $year === (int) date('Y'));
+        $ttl = $isCurrentMonth ? 600 : 604800; // 10 menit jika bulan ini, 7 hari jika bulan lalu
 
-        return [
-            'period'  => Carbon::createFromDate($year, $month, 1)->format('F Y'),
-            'data'    => $data,
-            'total'   => array_sum(array_column($data, 'revenue')),
-            'count'   => array_sum(array_column($data, 'transaction_count')),
-        ];
+        return cache()->remember("report_daily_{$year}_{$month}", $ttl, function () use ($month, $year) {
+            $data = $this->orderRepository->getDailyReportData($month, $year);
+
+            return [
+                'period'  => Carbon::createFromDate($year, $month, 1)->format('F Y'),
+                'data'    => $data,
+                'total'   => array_sum(array_column($data, 'revenue')),
+                'count'   => array_sum(array_column($data, 'transaction_count')),
+            ];
+        });
     }
 
     public function getWeeklyReport(int $year): array
     {
-        $data = $this->orderRepository->getWeeklyReportData($year);
+        $isCurrentYear = ($year === (int) date('Y'));
+        $ttl = $isCurrentYear ? 600 : 604800; // 10 menit jika tahun ini, 7 hari jika tahun lalu
 
-        return [
-            'period'  => 'Per Minggu ' . $year,
-            'data'    => $data,
-            'total'   => array_sum(array_column($data, 'revenue')),
-            'count'   => array_sum(array_column($data, 'transaction_count')),
-        ];
+        return cache()->remember("report_weekly_{$year}", $ttl, function () use ($year) {
+            $data = $this->orderRepository->getWeeklyReportData($year);
+
+            return [
+                'period'  => 'Per Minggu ' . $year,
+                'data'    => $data,
+                'total'   => array_sum(array_column($data, 'revenue')),
+                'count'   => array_sum(array_column($data, 'transaction_count')),
+            ];
+        });
     }
 
     public function getMonthlyReport(int $year): array
     {
-        $data = $this->orderRepository->getMonthlyReportData($year);
+        $isCurrentYear = ($year === (int) date('Y'));
+        $ttl = $isCurrentYear ? 600 : 604800; // 10 menit jika tahun ini, 7 hari jika tahun lalu
 
-        return [
-            'period'  => (string) $year,
-            'data'    => $data,
-            'total'   => array_sum(array_column($data, 'revenue')),
-            'count'   => array_sum(array_column($data, 'transaction_count')),
-        ];
+        return cache()->remember("report_monthly_{$year}", $ttl, function () use ($year) {
+            $data = $this->orderRepository->getMonthlyReportData($year);
+
+            return [
+                'period'  => (string) $year,
+                'data'    => $data,
+                'total'   => array_sum(array_column($data, 'revenue')),
+                'count'   => array_sum(array_column($data, 'transaction_count')),
+            ];
+        });
     }
 
     public function getYearlyReport(): array
     {
-        $data = $this->orderRepository->getYearlyReportData();
+        return cache()->remember("report_yearly", 3600, function () { // Cache 1 jam
+            $data = $this->orderRepository->getYearlyReportData();
 
-        return [
-            'data'  => $data,
-            'total' => array_sum(array_column($data, 'revenue')),
-            'count' => array_sum(array_column($data, 'transaction_count')),
-        ];
+            return [
+                'data'  => $data,
+                'total' => array_sum(array_column($data, 'revenue')),
+                'count' => array_sum(array_column($data, 'transaction_count')),
+            ];
+        });
     }
 
     public function exportDaily(int $month, int $year): \Symfony\Component\HttpFoundation\BinaryFileResponse
