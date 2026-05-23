@@ -7,9 +7,9 @@ sleep 2
 
 # ─── Buat direktori storage framework ────────────────────────────────────────
 mkdir -p /var/www/html/storage/framework/sessions \
-         /var/www/html/storage/framework/cache \
-         /var/www/html/storage/framework/views \
-         /var/www/html/storage/logs
+        /var/www/html/storage/framework/cache \
+        /var/www/html/storage/framework/views \
+        /var/www/html/storage/logs
 chmod -R 777 /var/www/html/storage
 chown -R www-data:www-data /var/www/html/storage
 
