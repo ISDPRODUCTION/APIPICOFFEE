@@ -11,9 +11,52 @@ class BusinessSettings
 
     private const CACHE_KEY = 'settings.business_name';
 
+    private const LOGO_VERSION_KEY = 'settings.logo_version';
+
+    private const LOGO_VERSION_PATH = 'settings/logo.version';
+
     public static function logoUrl(): ?string
     {
-        return StorageUrl::publicForPath('settings/logo.png');
+        $base = StorageUrl::publicForPath('settings/logo.png');
+        if (! $base) {
+            return null;
+        }
+
+        $version = self::logoVersion();
+
+        return $base.(str_contains($base, '?') ? '&' : '?').'v='.$version;
+    }
+
+    public static function bumpLogoVersion(): int
+    {
+        $version = time();
+        Cache::forever(self::LOGO_VERSION_KEY, $version);
+        Cache::forget('settings_logo_url');
+
+        foreach (self::writableDisks() as $disk) {
+            try {
+                Storage::disk($disk)->put(self::LOGO_VERSION_PATH, (string) $version);
+            } catch (\Throwable) {
+                // coba disk berikutnya
+            }
+        }
+
+        return $version;
+    }
+
+    private static function logoVersion(): int
+    {
+        foreach (array_unique([StorageUrl::uploadDisk(), 's3', 'public']) as $disk) {
+            try {
+                if (Storage::disk($disk)->exists(self::LOGO_VERSION_PATH)) {
+                    return (int) Storage::disk($disk)->get(self::LOGO_VERSION_PATH);
+                }
+            } catch (\Throwable) {
+                continue;
+            }
+        }
+
+        return (int) Cache::get(self::LOGO_VERSION_KEY, 1);
     }
 
     public static function businessName(): string

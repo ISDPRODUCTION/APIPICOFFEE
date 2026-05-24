@@ -103,7 +103,7 @@ class SettingsController extends Controller
                 }
 
                 $request->file('logo')->storePubliclyAs('settings', 'logo.png', $uploadDisk);
-                cache()->forget('settings_logo_url');
+                BusinessSettings::bumpLogoVersion();
             }
 
             return response()->json([

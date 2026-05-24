@@ -10,8 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Support\BusinessSettings;
-use App\Support\StorageUrl;
-use Illuminate\Support\Facades\Storage;
 
 class UnifiedApiController extends Controller
 {
@@ -32,18 +30,9 @@ class UnifiedApiController extends Controller
         $stats = $this->orderService->getDashboardStats();
 
         // 4. Business Settings
-        $logoUrl = cache()->remember('settings_logo_url', 86400, function () {
-            try {
-                if (StorageUrl::diskConfigured() && Storage::disk('s3')->exists('settings/logo.png')) {
-                    return StorageUrl::public('settings/logo.png');
-                }
-            } catch (\Exception $e) {}
-            return null;
-        });
-
         $settings = [
             'business_name' => BusinessSettings::businessName(),
-            'logo'          => $logoUrl,
+            'logo'          => BusinessSettings::logoUrl(),
         ];
 
         // 5. User Profile

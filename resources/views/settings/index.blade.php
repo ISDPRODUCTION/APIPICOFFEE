@@ -91,10 +91,10 @@
                     <div class="relative flex-shrink-0">
                         <div id="logo-container" class="w-16 h-16 bg-stone-700 rounded-full flex items-center justify-center overflow-hidden">
                             @if(isset($settings['logo']) && $settings['logo'])
-                                <img id="logo-preview" src="{{ $settings['logo'] }}" alt="Logo" class="w-full h-full object-cover">
+                                <img id="logo-preview" data-app-logo src="{{ $settings['logo'] }}" alt="Logo" class="w-full h-full object-cover">
                             @else
                                 <span id="logo-text" class="text-white text-xs font-bold">COFFEE</span>
-                                <img id="logo-preview" src="" alt="Logo" class="w-full h-full object-cover hidden">
+                                <img id="logo-preview" data-app-logo src="" alt="Logo" class="w-full h-full object-cover hidden">
                             @endif
                         </div>
                         @if($isManager)
@@ -505,10 +505,14 @@ document.getElementById('business-identity-form')?.addEventListener('submit', as
         const data = await parseJsonResponse(res);
         if (data.success) {
             if (data.logo) {
-                const preview = document.getElementById('logo-preview');
-                const text = document.getElementById('logo-text');
-                if (preview) { preview.src = data.logo; preview.classList.remove('hidden'); }
-                if (text) text.classList.add('hidden');
+                if (window.updateAppLogo) {
+                    window.updateAppLogo(data.logo);
+                } else {
+                    const preview = document.getElementById('logo-preview');
+                    const text = document.getElementById('logo-text');
+                    if (preview) { preview.src = data.logo; preview.classList.remove('hidden'); }
+                    if (text) text.classList.add('hidden');
+                }
             }
             if (data.business_name) {
                 const parts = data.business_name.trim().split(/\s+/);

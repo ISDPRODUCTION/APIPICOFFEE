@@ -98,15 +98,13 @@
     <aside id="sidebar" class="w-60 bg-white border-r border-stone-200 flex flex-col flex-shrink-0 h-full">
         {{-- Logo + close button (mobile) --}}
         <div class="flex items-center gap-3 px-5 py-5 border-b border-stone-100">
-            <div class="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-orange-50 flex-shrink-0">
+            <div id="sidebar-logo-wrap" class="w-9 h-9 rounded-xl overflow-hidden flex items-center justify-center bg-orange-50 flex-shrink-0">
                 @php $logoUrl = \App\Support\BusinessSettings::logoUrl(); @endphp
-                @if($logoUrl)
-                    <img src="{{ $logoUrl }}" alt="Logo" class="w-full h-full object-cover">
-                @else
-                    <svg class="w-5 h-5 text-[#F97316]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
-                @endif
+                <img id="sidebar-logo" data-app-logo src="{{ $logoUrl ?? '' }}" alt="Logo"
+                     class="w-full h-full object-cover {{ $logoUrl ? '' : 'hidden' }}">
+                <svg id="sidebar-logo-fallback" class="w-5 h-5 text-[#F97316] {{ $logoUrl ? 'hidden' : '' }}" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
             </div>
             <span id="app-brand-name" class="font-bold text-[#1C1917] text-lg leading-none flex-1 truncate">
                 <span id="app-brand-main">{{ $brandMain }}</span>@if($brandAccent) <span id="app-brand-accent" class="text-[#F97316]">{{ $brandAccent }}</span>@endif
@@ -273,6 +271,18 @@ function closeSidebar() {
     document.getElementById('sidebar-overlay').classList.add('hidden');
     document.body.style.overflow = '';
 }
+
+window.updateAppLogo = function(url) {
+    if (!url) return;
+    document.querySelectorAll('[data-app-logo]').forEach(img => {
+        img.src = url;
+        img.classList.remove('hidden');
+    });
+    const fallback = document.getElementById('sidebar-logo-fallback');
+    if (fallback) fallback.classList.add('hidden');
+    const logoText = document.getElementById('logo-text');
+    if (logoText) logoText.classList.add('hidden');
+};
 </script>
 </body>
 </html>
