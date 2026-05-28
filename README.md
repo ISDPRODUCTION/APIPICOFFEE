@@ -19,7 +19,7 @@
 
 ## 📖 Tentang Proyek
 
-**Apipi Coffee POS** adalah sistem kasir (Point of Sale) berbasis web yang dirancang khusus untuk kebutuhan operasional kafe. Aplikasi ini memungkinkan staf kasir memproses transaksi dengan mudah, sementara manajer dan supervisor dapat memantau laporan penjualan, mengelola menu, dan mengatur tim karyawan — semua dalam satu platform.
+**Apipi Coffee POS** adalah sistem kasir (Point of Sale) berbasis web yang dirancang khusus untuk kebutuhan operasional kafe. Aplikasi ini memungkinkan staf kasir memproses transaksi dengan mudah, sementara manajer  dapat memantau laporan penjualan, mengelola menu, dan mengatur tim karyawan semua dalam satu platform.
 
 Proyek ini dikembangkan sebagai **Projek RPL (Rekayasa Perangkat Lunak)** menggunakan framework Laravel 10, dengan deployment ke cloud via Railway dan Google Cloud Run.
 
@@ -292,4 +292,4 @@ Proyek ini dibuat untuk keperluan **tugas akademik (RPL)** dan tidak untuk distr
 
 <p align="center">
   Dibuat dengan ❤️ menggunakan <a href="https://laravel.com">Laravel</a> oleh KELOMPOK 6_RPL_2025A
-</p>
+</p>JJ
